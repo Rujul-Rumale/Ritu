@@ -120,8 +120,15 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
         return if (lengths.isEmpty()) null else lengths.sum() / lengths.size
     }
 
-    /** "姨妈来了" — record period arrival */
-    suspend fun recordPeriodStart(): AddRecordResult? {
+    /**
+     * "姨妈来了" — record period arrival.
+     *
+     * [preferredStart] is honored as the default start date when it falls within
+     * the past 7 days (and isn't blocked by the min-date rule). Used by the
+     * detail-calendar tap-to-record flow so the picker opens on the day the
+     * user just selected, not always today.
+     */
+    suspend fun recordPeriodStart(preferredStart: LocalDate? = null): AddRecordResult? {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val state = service.getCycleState()
         val records = state.records
@@ -132,13 +139,18 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
             .maxByOrNull { it.endDate!! }
             ?.endDate?.plus(1, DateTimeUnit.DAY)
 
+        val sevenDaysAgo = today.minus(6, DateTimeUnit.DAY)
+        val defaultStart = preferredStart?.takeIf { d ->
+            d <= today && d >= sevenDaysAgo && (minDate == null || d >= minDate)
+        } ?: today
+
         // Step 1: Pick start date
         val start = showDatePicker(
             titleRes = Res.string.start_period_question,
             hintRes = Res.string.start_period_hint,
             minDate = minDate,
             maxDate = today,
-            defaultDate = today,
+            defaultDate = defaultStart,
         ) ?: return null
 
         // Step 2: If start > 3 days ago, also ask for end date (backfill scenario)

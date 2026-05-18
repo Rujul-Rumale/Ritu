@@ -69,11 +69,6 @@
     <string name="detail_delete_confirm">删除</string>
     <!-- Onboarding -->
     <string name="onboarding_welcome">在开始使用前，我们需要您回答几个问题，以帮助我们更好地了解您的月经周期。请放心，您的数据只会存储于本地，并且可以在任何时间被完全删除。</string>
-    <string name="onboarding_when_last_start">上次月经是什么时候开始的？</string>
-    <string name="onboarding_when_end">什么时候结束的？</string>
-    <string name="onboarding_select_period_range">上次月经是什么时候？</string>
-    <string name="onboarding_select_period_hint">先点开始日期，再点结束日期。</string>
-    <string name="onboarding_select_end">选择结束日期</string>
     <string name="onboarding_all_set">准备就绪！</string>
     <string name="onboarding_get_started">开始使用</string>
     <string name="onboarding_next">下一步</string>
@@ -105,6 +100,28 @@
     <string name="onboarding_notifications_desc">在经期和排卵期前提前提醒您。打开您需要的项目即可，之后可在「设置」里微调。</string>
     <!-- Onboarding — 合成数据提示 -->
     <string name="onboarding_synthetic_hint">为了让预测立刻可用，我们会基于以上设置生成几个过往周期。您可以随时查看并修改它们。</string>
+    <!-- Onboarding — 当前状态 -->
+    <string name="onboarding_status_title">你现在的状态是？</string>
+    <string name="onboarding_status_subtitle">选择最符合你当下情况的选项。</string>
+    <string name="onboarding_status_active_title">我正在经期</string>
+    <string name="onboarding_status_active_subtitle">我们会按进行中的姨妈记录。</string>
+    <string name="onboarding_status_ended_title">上一次姨妈已经结束</string>
+    <string name="onboarding_status_ended_subtitle">选择起止日期。</string>
+    <string name="onboarding_status_unsure_title">暂时不确定</string>
+    <string name="onboarding_status_unsure_subtitle">先跳过 — 之后可以在首页随时记录。</string>
+    <string name="onboarding_status_simple_title">你现在正在经期吗？</string>
+    <string name="onboarding_status_simple_subtitle">历史记录已经导入，只需告诉我们今天的情况。</string>
+    <string name="onboarding_status_simple_no_title">暂时没有</string>
+    <string name="onboarding_status_simple_no_subtitle">用已导入的历史进行预测。</string>
+    <string name="onboarding_status_active_start_label">开始于</string>
+    <string name="onboarding_status_ended_start_label">开始于</string>
+    <string name="onboarding_status_ended_end_label">结束于</string>
+    <string name="onboarding_status_pick_date">选择日期</string>
+    <string name="onboarding_status_pick_start">选择开始日期</string>
+    <string name="onboarding_status_pick_end">选择结束日期</string>
+    <string name="onboarding_status_unsure_hint">我们会使用默认的周期设置帮你启动，之后可以随时调整。</string>
+    <string name="onboarding_status_imported_chip">已导入 %1$d 条记录</string>
+    <string name="onboarding_status_auto_detected">从你的健康记录中检测到正在进行的经期。</string>
     <!-- Statistics Screen -->
     <string name="stats_empty_message">记录至少 2 次月经，即可查看统计数据</string>
     <string name="stats_avg_section_title">最近%1$d个周期的平均值</string>

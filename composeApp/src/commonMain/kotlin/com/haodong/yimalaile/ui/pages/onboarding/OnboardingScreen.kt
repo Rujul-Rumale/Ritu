@@ -32,9 +32,9 @@ import kotlinx.datetime.until
 internal enum class OnboardingStep {
     Welcome,
     HealthSync,
-    Notifications,
-    PeriodDate,
+    PeriodStatus,
     CycleSettings,
+    Notifications,
     AllSet,
 }
 
@@ -52,23 +52,38 @@ fun OnboardingScreen(
     val scope = rememberCoroutineScope()
 
     var step by remember { mutableStateOf(OnboardingStep.Welcome) }
-    var periodStart by remember { mutableStateOf<LocalDate?>(null) }
-    var periodEnd by remember { mutableStateOf<LocalDate?>(null) }
+
+    // Period-status state
+    var statusOption by remember { mutableStateOf<PeriodStatusOption?>(null) }
+    var activeStart by remember { mutableStateOf<LocalDate?>(null) }
+    var endedStart by remember { mutableStateOf<LocalDate?>(null) }
+    var endedEnd by remember { mutableStateOf<LocalDate?>(null) }
+
+    // Cycle settings state
     var cycleLength by remember { mutableIntStateOf(28) }
     var periodDuration by remember { mutableIntStateOf(5) }
+
+    // HealthSync results that influence later steps
     var importedCount by remember { mutableIntStateOf(0) }
     var existingRecordCount by remember { mutableIntStateOf(0) }
+    var existingHasActivePeriod by remember { mutableStateOf(false) }
 
-    // Steps the user actually sees, in order. We hide HealthSync when the
-    // platform doesn't expose a health store, and PeriodDate once we already
-    // have records on file (either pre-existing or freshly imported).
-    val orderedSteps: List<OnboardingStep> = remember(healthSyncManager, existingRecordCount) {
+    val periodStatusMode: PeriodStatusMode = when {
+        existingRecordCount > 0 -> PeriodStatusMode.SimpleYesNo
+        else -> PeriodStatusMode.Full
+    }
+
+    // Steps the user actually sees, in order. We:
+    //  - hide HealthSync when the platform doesn't expose a health store,
+    //  - hide PeriodStatus when HealthSync already gave us an active period
+    //    (we know what they'd say), otherwise show it in Simple or Full mode.
+    val orderedSteps: List<OnboardingStep> = remember(healthSyncManager, existingHasActivePeriod) {
         buildList {
             add(OnboardingStep.Welcome)
             if (healthSyncManager != null) add(OnboardingStep.HealthSync)
-            add(OnboardingStep.Notifications)
-            if (existingRecordCount == 0) add(OnboardingStep.PeriodDate)
+            if (!existingHasActivePeriod) add(OnboardingStep.PeriodStatus)
             add(OnboardingStep.CycleSettings)
+            add(OnboardingStep.Notifications)
             add(OnboardingStep.AllSet)
         }
     }
@@ -87,6 +102,16 @@ fun OnboardingScreen(
     fun goBack() {
         val idx = orderedSteps.indexOf(step)
         if (idx > 0) step = orderedSteps[idx - 1]
+    }
+
+    fun resolvePeriodEntry(): PeriodEntry = when (statusOption) {
+        PeriodStatusOption.Active -> activeStart?.let { PeriodEntry.Active(it) } ?: PeriodEntry.None
+        PeriodStatusOption.Ended -> {
+            val s = endedStart
+            val e = endedEnd
+            if (s != null && e != null && e >= s) PeriodEntry.Ended(s, e) else PeriodEntry.None
+        }
+        PeriodStatusOption.Unsure, null -> PeriodEntry.None
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -129,7 +154,9 @@ fun OnboardingScreen(
                             importedCount = imported
                             scope.launch {
                                 settings.setHealthSyncEnabled(true)
-                                existingRecordCount = service.getCycleState(cycleLength).records.size
+                                val state = service.getCycleState(cycleLength)
+                                existingRecordCount = state.records.size
+                                existingHasActivePeriod = state.currentPeriod != null
                                 goNext()
                             }
                         },
@@ -137,47 +164,76 @@ fun OnboardingScreen(
                         onBack = { goBack() },
                     )
 
-                    OnboardingStep.Notifications -> NotificationsStep(
-                        prefs = notificationPrefs,
-                        hasPermission = notificationPermissionGranted,
-                        onPrefsChange = onUpdateNotificationPrefs,
-                        onRequestPermission = onRequestNotificationPermission,
-                        onContinue = { goNext() },
-                        onSkip = { goNext() },
-                        onBack = { goBack() },
-                    )
-
-                    OnboardingStep.PeriodDate -> PeriodDateStep(
-                        periodStart = periodStart,
-                        periodEnd = periodEnd,
-                        onSelectionChange = { s, e ->
-                            periodStart = s
-                            periodEnd = e
+                    OnboardingStep.PeriodStatus -> PeriodStatusStep(
+                        mode = periodStatusMode,
+                        importedCount = importedCount,
+                        selected = statusOption,
+                        activeStart = activeStart,
+                        endedStart = endedStart,
+                        endedEnd = endedEnd,
+                        onSelect = { statusOption = it },
+                        onActiveStartChange = { activeStart = it },
+                        onEndedStartChange = {
+                            endedStart = it
+                            if (endedEnd != null && endedEnd!! < it) endedEnd = null
                         },
-                        onNext = {
-                            if (periodStart != null && periodEnd != null) {
-                                periodDuration = periodStart!!.until(periodEnd!!, DateTimeUnit.DAY).toInt() + 1
+                        onEndedEndChange = { endedEnd = it },
+                        onContinue = {
+                            // Pre-fill the cycle-settings duration slider from the Ended range
+                            // so the user sees a sensible default instead of the generic 5.
+                            if (statusOption == PeriodStatusOption.Ended) {
+                                val s = endedStart
+                                val e = endedEnd
+                                if (s != null && e != null) {
+                                    periodDuration = s.until(e, DateTimeUnit.DAY).toInt() + 1
+                                }
                             }
                             goNext()
                         },
                         onBack = { goBack() },
                     )
 
-                    OnboardingStep.CycleSettings -> CycleSettingsStep(
-                        cycleLength = cycleLength,
-                        periodDuration = periodDuration,
-                        onCycleLengthChange = { cycleLength = it },
-                        onPeriodDurationChange = { periodDuration = it },
-                        showSyntheticHint = (existingRecordCount + (if (periodStart != null && periodEnd != null && existingRecordCount == 0) 1 else 0)) < ENOUGH_RECORDS_FOR_PREDICTION,
-                        onSave = {
+                    OnboardingStep.CycleSettings -> {
+                        val plannedCount = existingRecordCount + when (statusOption) {
+                            PeriodStatusOption.Active, PeriodStatusOption.Ended -> 1
+                            PeriodStatusOption.Unsure, null -> 0
+                        }
+                        CycleSettingsStep(
+                            cycleLength = cycleLength,
+                            periodDuration = periodDuration,
+                            onCycleLengthChange = { cycleLength = it },
+                            onPeriodDurationChange = { periodDuration = it },
+                            showSyntheticHint = plannedCount < ENOUGH_RECORDS_FOR_PREDICTION,
+                            onSave = { goNext() },
+                            onBack = { goBack() },
+                        )
+                    }
+
+                    OnboardingStep.Notifications -> NotificationsStep(
+                        prefs = notificationPrefs,
+                        hasPermission = notificationPermissionGranted,
+                        onPrefsChange = onUpdateNotificationPrefs,
+                        onRequestPermission = onRequestNotificationPermission,
+                        onContinue = {
                             scope.launch {
                                 commitOnboarding(
                                     service = service,
                                     settings = settings,
                                     cycleLength = cycleLength,
                                     periodDuration = periodDuration,
-                                    manualStart = periodStart,
-                                    manualEnd = periodEnd,
+                                    entry = resolvePeriodEntry(),
+                                )
+                                goNext()
+                            }
+                        },
+                        onSkip = {
+                            scope.launch {
+                                commitOnboarding(
+                                    service = service,
+                                    settings = settings,
+                                    cycleLength = cycleLength,
+                                    periodDuration = periodDuration,
+                                    entry = resolvePeriodEntry(),
                                 )
                                 goNext()
                             }

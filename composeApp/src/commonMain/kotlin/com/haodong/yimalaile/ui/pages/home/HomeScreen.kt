@@ -25,6 +25,7 @@ import com.haodong.yimalaile.ui.components.SuccessOverlay
 import com.haodong.yimalaile.ui.pages.sheet.SheetViewModel
 import com.haodong.yimalaile.ui.theme.expressiveShapes
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import yimalaile.composeapp.generated.resources.Res
 import yimalaile.composeapp.generated.resources.app_name
@@ -45,6 +46,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val successMsg = stringResource(Res.string.record_save_success)
     var successMessage by remember { mutableStateOf<String?>(null) }
+    // Selected date on the detail calendar — drives the default for "姨妈来了" when
+    // the user has tapped a recent day on the calendar before pressing the button.
+    var detailSelectedDate by remember { mutableStateOf<LocalDate?>(null) }
 
     LaunchedEffect(Unit) {
         sheetViewModel.dataChanged.collect { viewModel.refresh() }
@@ -66,6 +70,8 @@ fun HomeScreen(
                         service = service,
                         onRefresh = { viewModel.refresh() },
                         sheetViewModel = sheetViewModel,
+                        detailSelectedDate = detailSelectedDate,
+                        onDetailSelectedDateChange = { detailSelectedDate = it },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -80,7 +86,9 @@ fun HomeScreen(
                         onToggleMode = { mode -> viewModel.updateHomeMode(mode) },
                         onPeriodArrived = {
                             scope.launch {
-                                val result = sheetViewModel.recordPeriodStart() ?: return@launch
+                                val result = sheetViewModel.recordPeriodStart(
+                                    preferredStart = detailSelectedDate,
+                                ) ?: return@launch
                                 if (result is AddRecordResult.Success) {
                                     viewModel.refresh(); successMessage = successMsg
                                 }
@@ -146,6 +154,8 @@ private fun HomeContent(
     service: MenstrualService,
     onRefresh: () -> Unit,
     sheetViewModel: SheetViewModel,
+    detailSelectedDate: LocalDate?,
+    onDetailSelectedDateChange: (LocalDate?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedContent(
@@ -181,6 +191,8 @@ private fun HomeContent(
                     phaseInfo = phaseInfo,
                     service = service,
                     onRefresh = onRefresh,
+                    selectedDate = detailSelectedDate,
+                    onSelectedDateChange = onDetailSelectedDateChange,
                 )
             }
             HomeMode.STATS -> {

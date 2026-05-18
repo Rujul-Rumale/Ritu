@@ -69,11 +69,6 @@
     <string name="detail_delete_confirm">Delete</string>
     <!-- Onboarding -->
     <string name="onboarding_welcome">Before we begin, we need a few details about your cycle to provide accurate predictions. Your data is stored locally and can be deleted at any time.</string>
-    <string name="onboarding_when_last_start">When did your last period start?</string>
-    <string name="onboarding_when_end">When did it end?</string>
-    <string name="onboarding_select_period_range">When was your last period?</string>
-    <string name="onboarding_select_period_hint">Tap a start date, then an end date.</string>
-    <string name="onboarding_select_end">select end date</string>
     <string name="onboarding_all_set">All set!</string>
     <string name="onboarding_get_started">Get started</string>
     <string name="onboarding_next">Next</string>
@@ -105,6 +100,28 @@
     <string name="onboarding_notifications_desc">Get gentle nudges before your period and ovulation. Toggle on what you want — you can fine-tune in Settings later.</string>
     <!-- Onboarding — Synthetic data note -->
     <string name="onboarding_synthetic_hint">We'll generate a few past cycles based on these settings so predictions work right away. You can review and edit them anytime.</string>
+    <!-- Onboarding — Period status step -->
+    <string name="onboarding_status_title">Where are you in your cycle?</string>
+    <string name="onboarding_status_subtitle">Pick the option that matches your situation right now.</string>
+    <string name="onboarding_status_active_title">I'm on my period now</string>
+    <string name="onboarding_status_active_subtitle">We'll track it as ongoing.</string>
+    <string name="onboarding_status_ended_title">My last period has ended</string>
+    <string name="onboarding_status_ended_subtitle">Pick the start and end dates.</string>
+    <string name="onboarding_status_unsure_title">I'm not sure yet</string>
+    <string name="onboarding_status_unsure_subtitle">Skip for now — record from the home screen anytime.</string>
+    <string name="onboarding_status_simple_title">Are you on your period right now?</string>
+    <string name="onboarding_status_simple_subtitle">We already imported your history. Just tell us about today.</string>
+    <string name="onboarding_status_simple_no_title">Not right now</string>
+    <string name="onboarding_status_simple_no_subtitle">Use the imported history for predictions.</string>
+    <string name="onboarding_status_active_start_label">Started on</string>
+    <string name="onboarding_status_ended_start_label">Started on</string>
+    <string name="onboarding_status_ended_end_label">Ended on</string>
+    <string name="onboarding_status_pick_date">Pick a date</string>
+    <string name="onboarding_status_pick_start">Pick start date</string>
+    <string name="onboarding_status_pick_end">Pick end date</string>
+    <string name="onboarding_status_unsure_hint">We'll use default cycle settings to get you started. You can fine-tune anytime.</string>
+    <string name="onboarding_status_imported_chip">%1$d records imported</string>
+    <string name="onboarding_status_auto_detected">We detected an ongoing period in your imported records.</string>
     <!-- Statistics Screen -->
     <string name="stats_empty_message">Record at least 2 periods to see your statistics</string>
     <string name="stats_avg_section_title">Average of last %1$d cycles</string>

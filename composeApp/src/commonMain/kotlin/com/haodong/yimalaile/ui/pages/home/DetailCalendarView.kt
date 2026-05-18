@@ -43,6 +43,8 @@ internal fun DetailCalendarView(
     phaseInfo: CyclePhaseInfo?,
     service: MenstrualService,
     onRefresh: () -> Unit,
+    selectedDate: LocalDate?,
+    onSelectedDateChange: (LocalDate?) -> Unit,
 ) {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val scope = rememberCoroutineScope()
@@ -59,15 +61,9 @@ internal fun DetailCalendarView(
     }
     val (displayYear, displayMonth) = displayYearMonth
 
-    var selectedDate by remember { mutableStateOf<LocalDate?>(today) }
-
     // Clear selection when month changes
     LaunchedEffect(currentPage) {
-        if (currentPage == CENTER_PAGE) {
-            selectedDate = today
-        } else {
-            selectedDate = null
-        }
+        onSelectedDateChange(if (currentPage == CENTER_PAGE) today else null)
     }
 
     // Period date sets
@@ -198,7 +194,7 @@ internal fun DetailCalendarView(
                     periodStartDates = periodStartDates,
                     periodEndDates = periodEndDates,
                     selectedDate = selectedDate,
-                    onDateClick = { selectedDate = it },
+                    onDateClick = { onSelectedDateChange(it) },
                     allRecords = allRecords,
                     predictions = cycleState.predictions,
                     phaseInfo = phaseInfo,
