@@ -1,0 +1,42 @@
+Ritu — Period Tracker
+Copyright (c) 2026 Rujul (https://github.com/Rujul-Rumale)
+
+===========================================================================
+
+This software is a FORK of YIMA (also published as 姨妈来了 / "Yimalaile").
+
+    YIMA
+    Copyright (c) 2025-2026 Novawerk
+    Licensed under the MIT License
+    https://github.com/Novawerk/YIMA
+
+Ritu is based on the YIMA codebase and remains a derivative work of it. The
+original copyright notice and the full MIT license text are preserved in the
+LICENSE file at the root of this repository, as required by the MIT License.
+
+---------------------------------------------------------------------------
+
+What this fork changes
+
+YIMA tracks a single person's cycle. Ritu extends it with multi-person
+tracking: several people (self, partner, family, friends) can each keep their
+own private cycle history, settings, daily logs, and predictions inside one
+app. It also adds per-person reminders and a "For me / For someone else" onboarding
+flow. All cycle data continues to be stored locally on the device.
+
+The upstream project, its authors, and the original design are credited to
+Novawerk. Bugs and changes introduced by this fork are the responsibility of
+the Ritu maintainer, not of the YIMA authors.
+
+---------------------------------------------------------------------------
+
+Third-party components
+
+This app depends on other open-source projects, including but not limited to:
+
+    * YIMA                              https://github.com/Novawerk/YIMA
+    * HealthKMP (Vitoksmile)            https://github.com/vitoksmile/HealthKMP
+    * Jetpack / AndroidX, Compose Multiplatform, Kotlin (JetBrains)
+    * Comfortaa typeface (Manuel Rafael Pereira de Almeida / Johan Kallas)
+
+Please refer to each project's repository for its own license terms.

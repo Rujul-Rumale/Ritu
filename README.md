@@ -1,37 +1,52 @@
-# YIMA — Period Calendar
+# Ritu — Period Tracker
 
-[中文版本](README_ZH.md)
+**Ritu is a fork of [YIMA](https://github.com/Novawerk/YIMA)** — the privacy-first, open-source period tracker by [Novawerk](https://github.com/Novawerk). YIMA tracks one person. **Ritu tracks the people you care for**: keep a private cycle history for yourself, a partner, family, and friends — all in one app, all on your device.
 
-A privacy-first, open-source menstrual cycle tracker built with Kotlin Multiplatform and Compose Multiplatform. All data stays on your device. No account, no cloud, no network, no analytics, no ads.
+Built with Kotlin Multiplatform and Compose Multiplatform. No account, no cloud, no network, no analytics, no ads.
 
-**By [Novawerk](https://github.com/Novawerk)** — Open-source apps, made with care.
+**Maintained by [Rujul](https://github.com/Rujul-Rumale)** · upstream project by [Novawerk](https://github.com/Novawerk).
 
-## Why YIMA exists
+## A fork of YIMA
+
+This project would not exist without YIMA (姨妈来了), the MIT-licensed, local-only menstrual cycle tracker created by Novawerk. Ritu keeps YIMA's foundation — the prediction engine, the Material 3 Expressive interface, health-data sync, and the privacy-first architecture — and builds on top of it.
+
+**What Ritu adds to YIMA:**
+
+- **Multi-person tracking** — manage several people in one app. Each person has their own cycle settings, records, daily logs, and predictions. The home screen shows one person at a time with a picker to switch.
+- **"For me / For someone else" onboarding** — set up your own cycle, or start tracking for someone else right away.
+- **Per-person reminders** — period, ovulation, and daily notifications are scheduled separately for each person.
+
+Everything else — the cycle math, phases, calendar, health sync, report export, localization — is inherited from YIMA and credited to its authors (see [Credits](#credits)).
+
+## Why Ritu exists
 
 Most small utility apps used to be good. Somewhere along the way, the pressure to monetize turned them into something else — core features hidden behind paywalls, interfaces bloated with ads and upsells, settings pages that quietly exist to nudge you toward a subscription. The experience gets cut down until what's left barely resembles the tool you originally wanted.
 
-YIMA is a deliberate experiment in the other direction: **design a small tool without profit as a constraint, and see whether the experience can become good again**. No business model means no reason to compromise the core loop. No ads means no reason to keep you opening the app. No account means no reason to harvest data. What's left is just the thing itself — a period tracker that tries to be genuinely useful, then gets out of your way.
-
-If that experiment lands, maybe more small utilities can be rebuilt this way.
+YIMA was a deliberate experiment in the other direction: **design a small tool without profit as a constraint, and see whether the experience can become good again**. Ritu inherits that philosophy — no business model, no ads, no account, no data harvesting — and extends it to the people around you. A cycle tracker is more useful when it can hold the whole household, not just one person.
 
 ## Features
 
+### Multi-person tracking (Ritu)
+- **Several people, one app** — each person keeps a fully separate cycle: their own period length, cycle length, records, daily logs, and predictions
+- **"This is me" flag** — mark your own profile so the app can label it and remember which person is you
+- **Person switcher** — move between people from the home screen; the calendar, statistics, and reminders all follow the selected person
+
 ### Logging
-- **One-tap period tracking** — "Period arrived" / "Period ended" buttons on the home screen, with an estimated end date based on your average period length until you confirm it
-- **Backfill past periods** — Add any historical period by selecting a range on the calendar
-- **In-calendar editing** — Tap any day in the detail view to add, delete, extend, or shorten a period directly
+- **One-tap period tracking** — "Period arrived" / "Period ended" buttons on the home screen, with an estimated end date based on the person's average period length until you confirm it
+- **Backfill past periods** — add any historical period by selecting a range on the calendar
+- **In-calendar editing** — tap any day in the detail view to add, delete, extend, or shorten a period directly
 
 ### Predictions & cycle phases
-- **Next 3 cycles predicted** — Based on your historical average cycle length, with a fallback to the cycle length you set in onboarding
-- **Anomaly filter** — Cycles shorter than 14 days are treated as anomalies and excluded from the prediction average so a one-off irregular cycle doesn't skew your forecast
-- **Smart auto-confirm** — If a predicted period is 3+ days past its expected end and you haven't logged anything, YIMA quietly auto-confirms it so the calendar stays in sync even if you forget to tap
+- **Next 3 cycles predicted** — based on the person's historical average cycle length, with a fallback to the cycle length set in onboarding
+- **Anomaly filter** — cycles shorter than 14 days are treated as anomalies and excluded from the prediction average, so a one-off irregular cycle doesn't skew the forecast
+- **Smart auto-confirm** — if a predicted period is 3+ days past its expected end and nothing has been logged, Ritu quietly auto-confirms it so the calendar stays in sync
 - **4 cycle phases** — Menstrual, Follicular, Ovulation, Luteal — calculated with the medical count-back method (ovulation at `cycleLength − 14`, 6-day fertile window)
-- **Per-day phase info** — Tap any day in the detail calendar to see the cycle day, current phase, ovulation peak, and contextual tips
+- **Per-day phase info** — tap any day in the detail calendar to see the cycle day, current phase, ovulation peak, and contextual tips
 
 ### Home screen — three views
-- **Overview** — Large circular calendar showing the current cycle at a glance with phase indicator
-- **Detail calendar** — Month-by-month swipeable pager with color-coded period days, predicted days, ovulation window, ovulation-peak flower icon, and period start/end markers
-- **Statistics** — Bar chart of recent cycles (with anomaly highlighting), averages over the last 6 cycles (period length + cycle length), and a scrollable record history
+- **Overview** — large circular calendar showing the current cycle at a glance with a phase indicator
+- **Detail calendar** — month-by-month swipeable pager with color-coded period days, predicted days, ovulation window, ovulation-peak flower icon, and period start/end markers
+- **Statistics** — bar chart of recent cycles (with anomaly highlighting), averages over the last 6 cycles, and a scrollable record history
 
 ### Daily logging (per-day bottom sheet)
 - **Flow intensity** — Light / Medium / Heavy
@@ -40,28 +55,29 @@ If that experiment lands, maybe more small utilities can be rebuilt this way.
 - **Free-text notes**
 
 ### Notifications (opt-in)
-- **Period reminder** — 1–7 days before your next predicted period
-- **Ovulation reminder** — 1–7 days before your ovulation peak day
-- **Daily reminder** — At a time you choose
+- **Period reminder** — 1–7 days before the next predicted period
+- **Ovulation reminder** — 1–7 days before the ovulation peak day
+- **Daily reminder** — at a time you choose
 
-All three are off by default and require an explicit OS-level permission grant.
+All three are off by default and require an explicit OS-level permission grant. Reminders are scheduled **per person**.
 
 ### Health data sync
-- **Apple Health & Google Health Connect** — Bidirectional sync of menstrual period and flow data via [HealthKMP](https://github.com/vitoksmile/HealthKMP)
-- **Import** — Reads periods from the health platform and merges them with your existing records (skips overlapping ranges)
-- **Export** — Writes your manually-logged periods back to the health platform
-- **Opt-in** — Off by default; enable in Settings under "Health Data"
+- **Apple Health & Google Health Connect** — bidirectional sync of menstrual period and flow data via [HealthKMP](https://github.com/vitoksmile/HealthKMP)
+- **Import** — reads periods from the health platform and merges them with existing records (skips overlapping ranges)
+- **Export** — writes manually-logged periods back to the health platform
+- **Opt-in** — off by default; enable in Settings under "Health Data"
 
 ### Cycle report export
-- **Long-image PNG report** — Generates a single shareable image containing your summary (total records, average cycle, average period) and every record with its daily logs (flow, mood, symptoms, notes)
+- **Long-image PNG report** — generates a single shareable image containing a summary (total records, average cycle, average period) and every record with its daily logs (flow, mood, symptoms, notes)
 - **Pick the report language** — English or Chinese, independent of the app language
-- **Native share sheet** — Uses the OS share sheet on both Android and iOS so you can save it, send it to a doctor, or share with whoever you want — YIMA never sees the file
+- **Native share sheet** — uses the OS share sheet on both Android and iOS, so you can save it, send it to a doctor, or share with whoever you want — Ritu never sees the file
 
 ### Onboarding
+- "For me / For someone else" — set up your own cycle or add someone else
 - Welcome screen with app logo
-- Pick your last period range on a calendar
+- Pick the last period range on a calendar
 - Set period duration (2–10 days) and cycle length (20–45 days) with sliders
-- YIMA auto-generates 5 past cycles using your settings, so predictions and statistics work from day one — you don't have to wait for 2+ real cycles
+- Ritu auto-generates 5 past cycles using the settings, so predictions and statistics work from day one
 
 ### Settings
 - Display mode — System / Light / Dark
@@ -70,16 +86,16 @@ All three are off by default and require an explicit OS-level permission grant.
 - Health data sync (Apple Health / Google Health Connect)
 - Notifications
 - Cycle report export
-- About (version, author)
+- About (version, author, upstream credit)
 - Clear all data (destructive, with confirmation)
 
 ### Privacy
-- **Local-only storage** — Everything is stored in Jetpack DataStore on your device
+- **Local-only storage** — everything is stored in Jetpack DataStore on your device
 - **No account, no sign-in, no phone number**
-- **No network calls for user data** — the app makes no HTTP requests carrying cycle information
+- **No network calls for user data** — the standard build makes no HTTP requests carrying cycle information
 - **No analytics, no trackers, no ads**
-- **Open source** — Audit the code yourself
-- **Disclaimer on first launch** — YIMA is a tracking tool, not a medical device
+- **Open source** — audit the code yourself
+- **Disclaimer on first launch** — Ritu is a tracking tool, not a medical device
 
 ### Platform & design
 - **Android** (min SDK 26) and **iOS** — shared codebase
@@ -92,14 +108,14 @@ All three are off by default and require an explicit OS-level permission grant.
 |---|---|---|---|---|
 | ![Overview](docs/screenshots/android/01-overview.png) | ![Detail calendar](docs/screenshots/android/02-detail.png) | ![Statistics](docs/screenshots/android/03-statistics.png) | ![Reminders](docs/screenshots/android/04-reminder.png) | ![Settings](docs/screenshots/android/05-settings.png) |
 
-_Android, English locale, version 1.5.0. The bar chart shows the seeded 5-cycle history from onboarding._
+_Android, English locale. Some screenshots are inherited from upstream YIMA as the shared UI is still being re-captured for Ritu._
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Kotlin 2.2 |
-| UI | Compose Multiplatform 1.8 (Material 3 Expressive) |
+| Language | Kotlin 2.3 |
+| UI | Compose Multiplatform 1.11 (Material 3 Expressive) |
 | Navigation | Compose Navigation with type-safe `@Serializable` routes |
 | DI | kotlin-inject + KSP (`@KmpComponentCreate`) |
 | Health | [HealthKMP](https://github.com/vitoksmile/HealthKMP) (Apple HealthKit + Google Health Connect) |
@@ -107,11 +123,11 @@ _Android, English locale, version 1.5.0. The bar chart shows the seeded 5-cycle 
 | Date/Time | kotlinx-datetime + kotlinx-datetime-names |
 | Notifications | Platform-specific schedulers via `expect` / `actual` |
 | Targets | Android (min SDK 26, compile/target 36), iOS |
-| Build | Gradle 8.7 with version catalog |
+| Build | Gradle 8.14 with version catalog |
 
 ## Architecture
 
-Single module (`:composeApp`) with clean layering:
+Single module (`:composeApp`) with clean layering. The Kotlin package (`com.haodong.yimalaile`) retains the upstream namespace from YIMA:
 
 ```
 composeApp/src/commonMain/kotlin/com/haodong/yimalaile/
@@ -130,21 +146,21 @@ composeApp/src/commonMain/kotlin/com/haodong/yimalaile/
     ├── components/                   # Shared calendar & layout composables
     └── pages/
         ├── disclaimer/               # First-launch medical disclaimer
-        ├── onboarding/               # 4-step onboarding
+        ├── onboarding/               # Purpose / period / cycle / notifications
         ├── home/                     # Overview / detail / statistics modes
         ├── settings/                 # Settings + notification settings
         └── sheet/                    # Shared bottom-sheet host for logging, details, pickers
 ```
 
-## Quick Start
+## Building
 
 ```bash
 # Prerequisites: JDK 17+, Android SDK
 
-# Build Android
+# Build the debug APK
 ./gradlew :composeApp:assembleDebug
 
-# Install on device / emulator
+# Install on a device / emulator
 ./gradlew :composeApp:installDebug
 ```
 
@@ -160,19 +176,21 @@ For iOS, open `iosApp/` in Xcode and build normally. Copy `iosApp/Configuration/
 6. Predictions that pass their expected end date by 3+ days are auto-confirmed as real records
 7. Ending or shortening a period auto-trims any daily records outside the new range
 8. All data is local-only; a disclaimer is shown on first launch
-9. YIMA is a tracker, not a medical device — no clinical claims
+9. Ritu is a tracker, not a medical device — no clinical claims
 
-## Download
+## Credits
 
-- **App Store** — search "YIMA" / 姨妈来了
-- **Google Play** — search "YIMA" / 姨妈来了
+Ritu is built on the work of others:
 
-## Contributing
-
-We welcome contributions! Open an issue or submit a pull request.
+- **[YIMA](https://github.com/Novawerk/YIMA)** — the upstream project by [Novawerk](https://github.com/Novawerk), MIT-licensed. Ritu is a fork that adds multi-person tracking. The original copyright and license notices are preserved in [LICENSE](LICENSE) and [NOTICE](NOTICE).
+- **[HealthKMP](https://github.com/vitoksmile/HealthKMP)** by Vitoksmile — Apple HealthKit and Google Health Connect integration.
+- **Comfortaa** typeface, used under the SIL Open Font License.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+Ritu is released under the [MIT License](LICENSE) — the same license as its upstream base.
 
-Copyright (c) 2025–2026 [Novawerk](https://github.com/Novawerk). You are free to use, modify, and distribute this software, as long as the original copyright notice is included.
+- Copyright (c) 2025–2026 [Novawerk](https://github.com/Novawerk) — original YIMA project
+- Copyright (c) 2026 [Rujul](https://github.com/Rujul-Rumale) — Ritu fork
+
+You are free to use, modify, and distribute this software, as long as the original copyright notice is included.

@@ -1,5 +1,6 @@
 package com.haodong.yimalaile.ui.pages.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,10 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import yimalaile.composeapp.generated.resources.*
 
@@ -172,8 +173,14 @@ internal fun AboutSheet(onDismiss: () -> Unit) {
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
                 .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Image(
+                painterResource(Res.drawable.logo),
+                contentDescription = stringResource(Res.string.settings_about_org),
+                modifier = Modifier.size(96.dp),
+            )
             Text(
                 stringResource(Res.string.settings_about_org),
                 style = MaterialTheme.typography.headlineMedium,
@@ -184,125 +191,42 @@ internal fun AboutSheet(onDismiss: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
             )
             Text(
                 stringResource(Res.string.about_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
-
-            HorizontalDivider()
-
-            AboutSection(
-                title = stringResource(Res.string.about_vision_title),
-                body = stringResource(Res.string.about_vision_body),
-            )
-
-            AboutSection(
-                title = stringResource(Res.string.about_mission_title),
-                body = stringResource(Res.string.about_mission_intro),
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf(
-                    stringResource(Res.string.about_mission_b1),
-                    stringResource(Res.string.about_mission_b2),
-                    stringResource(Res.string.about_mission_b3),
-                    stringResource(Res.string.about_mission_b4),
-                    stringResource(Res.string.about_mission_b5),
-                ).forEach { item ->
-                    Row {
-                        Text(
-                            "·  ",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            item,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            HorizontalDivider()
-
             Text(
-                stringResource(Res.string.about_principles_title),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            PrincipleItem(
-                index = "01",
-                title = stringResource(Res.string.about_principle_1_title),
-                body = stringResource(Res.string.about_principle_1_body),
-            )
-            PrincipleItem(
-                index = "02",
-                title = stringResource(Res.string.about_principle_2_title),
-                body = stringResource(Res.string.about_principle_2_body),
-            )
-            PrincipleItem(
-                index = "03",
-                title = stringResource(Res.string.about_principle_3_title),
-                body = stringResource(Res.string.about_principle_3_body),
-            )
-
-            HorizontalDivider()
-
-            Text(stringResource(Res.string.about_team_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            Text(stringResource(Res.string.about_team_members), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(stringResource(Res.string.about_links_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-
-            val uriHandler = LocalUriHandler.current
-            val website = stringResource(Res.string.about_website)
-            val github = stringResource(Res.string.about_github)
-            Text(
-                website,
+                stringResource(Res.string.about_fork_notice),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { uriHandler.openUri("https://$website") },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
             Text(
-                github,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { uriHandler.openUri("https://$github") },
-            )
-        }
-    }
-}
-
-@Composable
-private fun AboutSection(title: String, body: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun PrincipleItem(index: String, title: String, body: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                index,
+                stringResource(Res.string.about_upstream_credit),
                 style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.width(8.dp))
             Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                stringResource(Res.string.about_license_note),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+
+            HorizontalDivider(Modifier.fillMaxWidth())
+
+            Text(
+                stringResource(Res.string.settings_made_by),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(
-            body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

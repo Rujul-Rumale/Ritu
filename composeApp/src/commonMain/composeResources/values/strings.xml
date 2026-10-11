@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources>
-    <string name="app_name">Lunar Cycle</string>
+    <string name="app_name">Ritu</string>
     <string name="disclaimer_title">Privacy &amp; Non-medical Disclaimer</string>
     <string name="disclaimer_body">This app stores data locally on your device and does not send it anywhere. It is for educational and planning purposes only and does not provide medical advice. Do not rely on it for diagnosis or treatment. By continuing, you acknowledge and accept these terms.</string>
     <string name="disclaimer_accept">I understand</string>
     <string name="settings_title">Settings</string>
-    <string name="settings_language">Language</string>
     <!-- Navigation -->
     <!-- Home Screen -->
     <string name="unit_days">days</string>
@@ -68,7 +67,7 @@
     <string name="detail_delete_body">This cannot be undone. Are you sure you want to delete this period record?</string>
     <string name="detail_delete_confirm">Delete</string>
     <!-- Onboarding -->
-    <string name="onboarding_welcome">Before we begin, we need a few details about your cycle to provide accurate predictions. Your data is stored locally and can be deleted at any time.</string>
+    <string name="onboarding_welcome">Before we begin, we need a few details to provide accurate predictions. Your data is stored locally and can be deleted at any time.</string>
     <string name="onboarding_all_set">All set!</string>
     <string name="onboarding_get_started">Get started</string>
     <string name="onboarding_next">Next</string>
@@ -77,40 +76,38 @@
     <string name="onboarding_step_indicator">Step %1$d of %2$d</string>
     <string name="onboarding_adjust">Adjust</string>
     <string name="onboarding_confirm">Confirm</string>
-    <string name="onboarding_cycle_settings_title">About your cycle</string>
-    <string name="onboarding_cycle_settings_hint">Set your typical period duration and cycle length. You can adjust these later in settings.</string>
+    <!-- Onboarding — Purpose step -->
+    <string name="onboarding_purpose_title">Who is this for?</string>
+    <string name="onboarding_purpose_hint">Choose who you\'re setting up first. You can add more people later from People.</string>
+    <string name="onboarding_purpose_me_title">For me</string>
+    <string name="onboarding_purpose_me_subtitle">Track your own cycle.</string>
+    <string name="onboarding_purpose_someone_title">For someone else</string>
+    <string name="onboarding_purpose_someone_subtitle">Track a family member or friend.</string>
+    <string name="onboarding_cycle_settings_title">About this person's cycle</string>
+    <string name="onboarding_cycle_settings_hint">Set their typical period duration and cycle length. You can adjust these later if it changes.</string>
     <string name="onboarding_period_duration_label">Period duration</string>
     <string name="onboarding_cycle_length_label">Cycle length</string>
     <string name="onboarding_all_set_hint_simple">Your period has been recorded. Predictions are now enabled.</string>
-    <string name="onboarding_all_set_hint_imported">%1$d cycles imported. Predictions are now enabled.</string>
+    <string name="onboarding_all_set_hint_someone">Their settings have been saved. Predictions are now enabled.</string>
     <string name="onboarding_back">Back</string>
     <string name="onboarding_save">Save</string>
-    <!-- Onboarding — Health sync step -->
-    <string name="onboarding_health_title">Sync from Health</string>
-    <string name="onboarding_health_desc">Import your existing menstrual records from Apple Health or Google Health Connect to get predictions right away. Your data stays on this device.</string>
-    <string name="onboarding_health_connect">Connect</string>
-    <string name="onboarding_health_syncing">Connecting…</string>
-    <string name="onboarding_health_imported">%1$d records imported</string>
-    <string name="onboarding_health_imported_one">1 record imported</string>
-    <string name="onboarding_health_no_records">No records found in Health</string>
-    <string name="onboarding_health_failed">Couldn't connect. Make sure to allow access to menstrual data when prompted.</string>
-    <string name="onboarding_health_retry">Try again</string>
     <!-- Onboarding — Notifications step -->
     <string name="onboarding_notifications_title">Reminders</string>
     <string name="onboarding_notifications_desc">Get gentle nudges before your period and ovulation. Toggle on what you want — you can fine-tune in Settings later.</string>
     <!-- Onboarding — Synthetic data note -->
-    <string name="onboarding_synthetic_hint">We'll generate a few past cycles based on these settings so predictions work right away. You can review and edit them anytime.</string>
+    <string name="onboarding_synthetic_hint">We'll generate a few past cycles from this person's settings so predictions work right away. You can review and edit them anytime.</string>
+    <string name="onboarding_synthetic_hint_me">We'll generate a few past cycles from your settings so predictions work right away. You can review and edit them anytime.</string>
     <!-- Onboarding — Period status step -->
-    <string name="onboarding_status_title">Where are you in your cycle?</string>
-    <string name="onboarding_status_subtitle">Pick the option that matches your situation right now.</string>
-    <string name="onboarding_status_active_title">I'm on my period now</string>
+    <string name="onboarding_status_title">Where is this person in their cycle?</string>
+    <string name="onboarding_status_subtitle">Pick the option that matches their situation right now.</string>
+    <string name="onboarding_status_active_title">On their period now</string>
     <string name="onboarding_status_active_subtitle">We'll track it as ongoing.</string>
-    <string name="onboarding_status_ended_title">My last period has ended</string>
+    <string name="onboarding_status_ended_title">Last period has ended</string>
     <string name="onboarding_status_ended_subtitle">Pick the start and end dates.</string>
-    <string name="onboarding_status_unsure_title">I'm not sure yet</string>
-    <string name="onboarding_status_unsure_subtitle">Skip for now — record from the home screen anytime.</string>
-    <string name="onboarding_status_simple_title">Are you on your period right now?</string>
-    <string name="onboarding_status_simple_subtitle">We already imported your history. Just tell us about today.</string>
+    <string name="onboarding_status_unsure_title">Not sure yet</string>
+    <string name="onboarding_status_unsure_subtitle">Skip for now — set the exact dates later on the calendar.</string>
+    <string name="onboarding_status_simple_title">Are they on their period right now?</string>
+    <string name="onboarding_status_simple_subtitle">We already imported their history. Just tell us about today.</string>
     <string name="onboarding_status_simple_no_title">Not right now</string>
     <string name="onboarding_status_simple_no_subtitle">Use the imported history for predictions.</string>
     <string name="onboarding_status_active_start_label">Started on</string>
@@ -120,8 +117,17 @@
     <string name="onboarding_status_pick_start">Pick start date</string>
     <string name="onboarding_status_pick_end">Pick end date</string>
     <string name="onboarding_status_unsure_hint">We'll use default cycle settings to get you started. You can fine-tune anytime.</string>
-    <string name="onboarding_status_imported_chip">%1$d records imported</string>
-    <string name="onboarding_status_auto_detected">We detected an ongoing period in your imported records.</string>
+    <!-- Onboarding — Period status step (first-person, "For me") -->
+    <string name="onboarding_status_title_me">Where are you in your cycle?</string>
+    <string name="onboarding_status_subtitle_me">Pick the option that matches your situation right now.</string>
+    <string name="onboarding_status_active_title_me">On your period now</string>
+    <string name="onboarding_status_active_subtitle_me">We'll track it as ongoing.</string>
+    <string name="onboarding_status_ended_title_me">Your last period has ended</string>
+    <string name="onboarding_status_ended_subtitle_me">Pick the start and end dates.</string>
+    <string name="onboarding_status_unsure_subtitle_me">Skip for now — set the exact dates later on the calendar.</string>
+    <!-- Onboarding — Cycle settings step (first-person) -->
+    <string name="onboarding_cycle_settings_title_me">About your cycle</string>
+    <string name="onboarding_cycle_settings_hint_me">Set your typical period duration and cycle length. You can adjust these later if it changes.</string>
     <!-- Statistics Screen -->
     <string name="stats_empty_message">Record at least 2 periods to see your statistics</string>
     <string name="stats_avg_section_title">Average of last %1$d cycles</string>
@@ -142,9 +148,7 @@
     <string name="settings_export">Export report</string>
     <string name="settings_export_value">Share as long image</string>
     <string name="export_dialog_title">Share long image</string>
-    <string name="export_dialog_body">Choose the language for the report. The long image will open in the system share sheet — pick where to send it or tap Save to Photos / gallery.</string>
-    <string name="export_lang_english">English</string>
-    <string name="export_lang_chinese">中文</string>
+    <string name="export_dialog_body">Your cycle report will open in the system share sheet — pick where to send it or tap Save to Photos / gallery.</string>
     <string name="export_button">Export</string>
     <string name="export_in_progress">Exporting…</string>
     <string name="export_success_title">Share sheet opened</string>
@@ -156,33 +160,15 @@
     <string name="settings_clear_data_value">Start over</string>
     <string name="settings_clear_title">Confirm Clear</string>
     <string name="settings_clear_body">This will delete all period records and restart onboarding. This action cannot be undone.</string>
-    <string name="settings_about">About Us</string>
-    <string name="settings_about_org">Novawerk</string>
-    <string name="settings_made_by">Made by Novawerk</string>
-    <string name="splash_built_by">Built by Novawerk</string>
-    <string name="settings_about_motto">Not profitable, but meaningful.</string>
-    <string name="about_description">Novawerk is an open, non-profit community hub focused on creating real positive change in society through collaboration, creativity, and action.\n\nWe believe great ideas should not remain as concepts, and that positive change happens when people come together to build, learn, and collaborate on real projects that turn ideas into reality.</string>
-    <string name="about_vision_title">Vision</string>
-    <string name="about_vision_body">To build an open space that empowers people to transform meaningful ideas into positive change for society.</string>
-    <string name="about_mission_title">Mission</string>
-    <string name="about_mission_intro">Novawerk exists to lower the barriers to creating positive change by helping people:</string>
-    <string name="about_mission_b1">Validate and refine meaningful ideas</string>
-    <string name="about_mission_b2">Break ideas into actionable scopes</string>
-    <string name="about_mission_b3">Collaborate with like-minded people</string>
-    <string name="about_mission_b4">Gain practical skills through real projects</string>
-    <string name="about_mission_b5">Create solutions that contribute positively to society</string>
-    <string name="about_principles_title">Core Principles</string>
-    <string name="about_principle_1_title">Purposeful Innovation</string>
-    <string name="about_principle_1_body">We believe innovation should create real positive change for people and society. Rather than following short-term trends or simple replication, we value meaningful ideas, thoughtful execution, and long-term contribution through real action.</string>
-    <string name="about_principle_2_title">Build, Learn, Together</string>
-    <string name="about_principle_2_body">Novawerk is an open community where people come together to learn, build, and grow through practical collaboration and real projects. We welcome individuals from different backgrounds, experiences, and skill levels who share a desire to create positive change together.</string>
-    <string name="about_principle_3_title">Responsibility for Positive Change</string>
-    <string name="about_principle_3_body">We believe everyone shares a responsibility to contribute positively to society through their actions, ideas, and participation. Positive change begins when people choose to care, contribute, and take responsibility instead of remaining indifferent or inactive.</string>
-    <string name="about_team_title">Team</string>
-    <string name="about_team_members">Made with ♥ by the Novawerk team</string>
-    <string name="about_links_title">Links</string>
-    <string name="about_website">novawerk.io</string>
-    <string name="about_github">github.com/Novawerk/yimalaile</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_org">Ritu</string>
+    <string name="settings_made_by">Made by Rujul</string>
+    <string name="splash_built_by">Built by Rujul</string>
+    <string name="settings_about_motto">Private period tracking for family and friends.</string>
+    <string name="about_description">Ritu is a personal, open-source period tracker built by Rujul.\n\nYour data never leaves your device — no accounts, no ads, no servers. Track yourself, family and friends in one app, each with their own private cycle history.</string>
+    <string name="about_fork_notice">Ritu is a fork of YIMA, the private period tracker by Novawerk. We added multi-person tracking so you can follow cycles for the people you care about — not just yourself.</string>
+    <string name="about_upstream_credit">Based on YIMA by Novawerk · github.com/Novawerk/YIMA</string>
+    <string name="about_license_note">Both projects are open source under the MIT License.</string>
     <!-- Weekday labels -->
     <string name="calendar_month_label">%1$d</string>
     <!-- Weekday labels -->
@@ -204,6 +190,7 @@
     <string name="home_current_phase">Current phase</string>
     <string name="home_last_period">Last period</string>
     <string name="home_next_period_starts">Next period starts</string>
+    <string name="home_info_next">Next period</string>
     <string name="home_day_in_cycle">Day %1$d of %2$d</string>
     <string name="phase_menstrual_desc">Uterine lining sheds. Rest and stay warm.</string>
     <string name="phase_follicular_desc">Body prepares for ovulation. Energy rises.</string>
@@ -243,21 +230,52 @@
     <string name="notifications_daily_time">Daily report time</string>
     <string name="notifications_permission_required">Notification permission required</string>
     <string name="notifications_permission_hint">Tap to grant permission so reminders can be delivered.</string>
-    <!-- Health Data Sync -->
-    <string name="settings_health_data">Health Data</string>
-    <string name="settings_health_sync">Sync with Health</string>
-    <string name="settings_health_sync_desc">Sync menstrual records with Apple Health or Google Health Connect</string>
-    <string name="settings_health_sync_now">Sync Now</string>
-    <string name="settings_health_syncing">Syncing\u2026</string>
-    <string name="settings_health_last_sync">Last synced: %1$s</string>
-    <string name="settings_health_never_synced">Never synced</string>
-    <string name="settings_health_not_available">Health data is not available on this device</string>
-    <string name="settings_health_not_authorized">Permission required to sync health data</string>
     <!-- Notification payload copy -->
     <string name="notif_period_title">Period is approaching</string>
     <string name="notif_period_body">Your next period is expected in about %1$d days. Time to get ready.</string>
+    <string name="notif_period_body_person">%1$s's period is expected in about %2$d days. Time to get ready.</string>
     <string name="notif_ovulation_title">Ovulation window soon</string>
     <string name="notif_ovulation_body">You are entering your fertile window in about %1$d days.</string>
+    <string name="notif_ovulation_body_person">%1$s's fertile window opens in about %2$d days.</string>
     <string name="notif_daily_title">Daily cycle report</string>
     <string name="notif_daily_body">Open the app to see today's phase and log how you feel.</string>
+    <string name="notif_daily_body_person">%1$s — open the app to see their phase and log how they feel.</string>
+    <!-- Onboarding — person identity -->
+    <string name="onboarding_person_name_label">Name (optional)</string>
+    <string name="onboarding_person_name_hint">e.g. Me</string>
+    <!-- People dashboard -->
+    <string name="people_title">People</string>
+    <string name="people_me_badge">Me</string>
+    <string name="person_edit_this_is_me">This is me</string>
+    <string name="person_edit_this_is_me_hint">Your own profile — uses first-person language. Only one is allowed.</string>
+    <string name="people_empty_title">No people yet</string>
+    <string name="people_empty_hint">Add yourself or the person you track to get started.</string>
+    <string name="people_add">Add person</string>
+    <string name="people_phase_line">%1$s · day %2$d</string>
+    <string name="people_cycle_days">%1$d-day cycle</string>
+    <string name="people_period_days">%1$d-day period</string>
+    <string name="person_edit_title">Edit person</string>
+    <string name="person_add_title">Add person</string>
+    <string name="person_delete_title">Delete person</string>
+    <string name="person_delete_body">Delete %1$s and all their records? This cannot be undone.</string>
+    <string name="person_add_period_title">When was their last period?</string>
+    <string name="person_add_option_today">Started today</string>
+    <string name="person_add_option_dates">Choose dates</string>
+    <string name="person_add_option_unsure">Not sure</string>
+    <string name="person_add_option_ongoing">Still ongoing</string>
+    <string name="person_add_start_label">Started on</string>
+    <string name="person_add_end_label">Ended on</string>
+    <string name="person_add_start_pick">Pick start date</string>
+    <string name="person_add_end_pick">Pick end date</string>
+    <string name="person_add_unsure_hint">We\'ll start with the default settings and you can set the exact date later on the calendar.</string>
+    <!-- Platform health sync (For-Me only) -->
+    <string name="health_sync_title">Health data sync</string>
+    <string name="health_sync_subtitle_me">Sync your periods with Apple Health / Health Connect on this device.</string>
+    <string name="health_sync_toggle">Sync health data</string>
+    <string name="health_sync_sync_now">Sync now</string>
+    <string name="health_sync_disabled_title">Health sync unavailable</string>
+    <string name="health_sync_disabled_body">Health apps keep one person per device, so sync is only available on your own profile. Other people stay in this app only.</string>
+    <string name="health_sync_unavailable">Health platform not connected yet.</string>
+    <string name="health_sync_off_hint">Turn the toggle on first.</string>
+    <string name="health_sync_synced">Imported %1$d, exported %2$d.</string>
 </resources>
