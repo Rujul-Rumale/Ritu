@@ -6,7 +6,15 @@ never pushed. `main` contains the clean app with zero transmission
 capability. The guardrails:
 
 - `.git/info/exclude` hides the local-only paths from git status/add.
-- `.git/hooks/pre-push` refuses any push that is not `main`.
+- `remote.origin.push` is pinned to `main`, so a bare `git push` from any
+  branch can only ever send `main`. (Check: `git config --get
+  remote.origin.push`.)
+- `beta-local` has no upstream, so a bare `git push` on it just errors out.
+- `.git/hooks/pre-push` refuses non-main pushes as a second layer wherever
+  git executes hooks. Note: Git for Windows silently skips hook files
+  without a POSIX executable bit, which PowerShell cannot set — so on this
+  machine the refspec above is the real guard; the hook is verified working
+  and protects checkouts on other systems.
 
 ## What's local-only
 
