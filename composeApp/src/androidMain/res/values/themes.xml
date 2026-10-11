@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cold-start theme for MainActivity. The Android 12+ system splash is
+         unavoidable on API 31+, so we neutralize it: background matches the
+         in-app dark splash and the animated icon is transparent (no logo flash),
+         handing off directly to the in-app "Built by Rujul" splash. -->
+    <style name="Theme.Ritu" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    </style>
+
+    <color name="splash_background">#1C1B1F</color>
+</resources>
