@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -203,8 +204,16 @@ fun AppTheme(
     }
     val colorScheme =
         when {
-            isDarkTheme -> darkColorScheme()
-            else -> expressiveLightColorScheme()
+            isDarkTheme -> darkColorScheme().copy(
+                secondary = Color(0xFFC9C2D8),
+                tertiary = Color(0xFFF48FB1),
+                error = Color(0xFFEF9A9A),
+            )
+            else -> expressiveLightColorScheme().copy(
+                secondary = Color(0xFF5E5870),
+                tertiary = Color(0xFFAD1457),
+                error = Color(0xFFC62828),
+            )
         }
 
 

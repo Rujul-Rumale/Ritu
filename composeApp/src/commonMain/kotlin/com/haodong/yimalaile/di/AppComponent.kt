@@ -9,8 +9,10 @@ import com.haodong.yimalaile.domain.menstrual.MenstrualService
 import com.haodong.yimalaile.domain.menstrual.RecordsRepository
 import com.haodong.yimalaile.domain.notifications.NotificationScheduler
 import com.haodong.yimalaile.domain.notifications.NotificationService
+import com.haodong.yimalaile.domain.person.PersonRepository
 import com.haodong.yimalaile.domain.settings.SettingsRepository
 import com.haodong.yimalaile.infrastructure.persistence.DataStoreDailyNoteRepository
+import com.haodong.yimalaile.infrastructure.persistence.DataStorePersonRepository
 import com.haodong.yimalaile.infrastructure.persistence.DataStoreRecordsRepository
 import com.viktormykhailiv.kmp.health.HealthManager
 import me.tatarka.inject.annotations.Component
@@ -25,12 +27,13 @@ abstract class AppComponent(
     @get:Provides protected val healthManager: HealthManager,
 ) {
     abstract val menstrualService: MenstrualService
-    abstract val settingsRepository: SettingsRepository
-    abstract val dailyNoteRepository: DailyNoteRepository
     abstract val healthSyncManager: HealthSyncManager
+    abstract val settingsRepository: SettingsRepository
+    abstract val personRepository: PersonRepository
+    abstract val dailyNoteRepository: DailyNoteRepository
 
     val notificationService: NotificationService by lazy {
-        NotificationService(menstrualService, notificationScheduler)
+        NotificationService(menstrualService, personRepository, notificationScheduler)
     }
 
     @Provides
@@ -38,6 +41,9 @@ abstract class AppComponent(
 
     @Provides
     fun DataStoreDailyNoteRepository.bind(): DailyNoteRepository = this
+
+    @Provides
+    fun DataStorePersonRepository.bind(): PersonRepository = this
 
     companion object
 }

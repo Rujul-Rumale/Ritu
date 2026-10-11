@@ -1,13 +1,10 @@
 package com.haodong.yimalaile.ui.pages.settings
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.haodong.yimalaile.ExportStatus
 import org.jetbrains.compose.resources.stringResource
@@ -20,13 +17,11 @@ import yimalaile.composeapp.generated.resources.export_dialog_title
 import yimalaile.composeapp.generated.resources.export_failure_body
 import yimalaile.composeapp.generated.resources.export_failure_title
 import yimalaile.composeapp.generated.resources.export_in_progress
-import yimalaile.composeapp.generated.resources.export_lang_chinese
-import yimalaile.composeapp.generated.resources.export_lang_english
 import yimalaile.composeapp.generated.resources.export_success_body
 import yimalaile.composeapp.generated.resources.export_success_title
 
 /**
- * Dialog that asks the user to pick a language for the PDF export.
+ * Dialog that triggers the PDF export.
  * Also surfaces in-progress / success / failure states from [ExportStatus]
  * in place, so the user never has to chase a toast.
  */
@@ -36,7 +31,6 @@ internal fun ExportDialog(
     onExport: (language: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var selectedLanguage by remember { mutableStateOf("en") }
     val busy = status is ExportStatus.InProgress
 
     AlertDialog(
@@ -65,28 +59,14 @@ internal fun ExportDialog(
                     }
                 }
                 ExportStatus.Idle -> {
-                    Column {
-                        Text(stringResource(Res.string.export_dialog_body))
-                        Spacer(Modifier.height(16.dp))
-                        LanguageOption(
-                            label = stringResource(Res.string.export_lang_english),
-                            selected = selectedLanguage == "en",
-                            onClick = { selectedLanguage = "en" },
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        LanguageOption(
-                            label = stringResource(Res.string.export_lang_chinese),
-                            selected = selectedLanguage == "zh",
-                            onClick = { selectedLanguage = "zh" },
-                        )
-                    }
+                    Text(stringResource(Res.string.export_dialog_body))
                 }
             }
         },
         confirmButton = {
             when (status) {
                 ExportStatus.Idle -> {
-                    TextButton(onClick = { onExport(selectedLanguage) }) {
+                    TextButton(onClick = { onExport("en") }) {
                         Text(stringResource(Res.string.export_button))
                     }
                 }
@@ -108,39 +88,4 @@ internal fun ExportDialog(
             }
         } else null,
     )
-}
-
-@Composable
-private fun LanguageOption(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Surface(
-        color = if (selected)
-            MaterialTheme.colorScheme.primaryContainer
-        else
-            MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .selectable(selected = selected, onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            RadioButton(selected = selected, onClick = null)
-            Spacer(Modifier.width(12.dp))
-            Text(
-                label,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (selected)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
 }

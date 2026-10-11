@@ -14,8 +14,7 @@ interface ReportExportService {
     /**
      * @param records All records to include in the report. Callers are
      *   expected to filter out deleted records and sort them by date.
-     * @param language ISO code for the report body language.
-     *   "zh" for Chinese, anything else defaults to English.
+     * @param language ISO code for the report body language. English only.
      */
     suspend fun exportCycleReport(
         records: List<MenstrualRecord>,

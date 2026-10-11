@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.haodong.yimalaile.domain.menstrual.CyclePhaseInfo
 import com.haodong.yimalaile.domain.menstrual.CycleState
 import com.haodong.yimalaile.domain.menstrual.MenstrualService
+import com.haodong.yimalaile.domain.person.Person
 import com.haodong.yimalaile.domain.settings.SettingsRepository
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -17,6 +18,7 @@ import kotlin.time.Clock
 class HomeViewModel(
     private val service: MenstrualService,
     private val settings: SettingsRepository,
+    private val person: Person,
 ) : ViewModel() {
 
     var cycleState by mutableStateOf<CycleState?>(null)
@@ -47,8 +49,8 @@ class HomeViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            val cycleLen = settings.getCycleLength()
-            val state = service.getCycleState(cycleLen)
+            val cycleLen = person.cycleLength
+            val state = service.getCycleState(person.id, cycleLen)
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
             phaseInfo = CyclePhaseInfo.getPhaseInfo(today, state, cycleLen)

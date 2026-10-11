@@ -50,7 +50,7 @@ class IosNotificationScheduler : NotificationScheduler {
 
     override fun schedule(reminder: ScheduledReminder) {
         // Cancel any previous request with the same identifier before adding.
-        val identifier = identifierFor(reminder.kind)
+        val identifier = identifierFor(reminder)
         center.removePendingNotificationRequestsWithIdentifiers(listOf(identifier))
 
         val content = UNMutableNotificationContent().apply {
@@ -84,8 +84,8 @@ class IosNotificationScheduler : NotificationScheduler {
         center.addNotificationRequest(request) { _ -> }
     }
 
-    override fun cancel(kind: ReminderKind) {
-        val id = identifierFor(kind)
+    override fun cancel(kind: ReminderKind, slot: Int) {
+        val id = identifierFor(kind, slot)
         center.removePendingNotificationRequestsWithIdentifiers(listOf(id))
         center.removeDeliveredNotificationsWithIdentifiers(listOf(id))
     }
@@ -95,5 +95,9 @@ class IosNotificationScheduler : NotificationScheduler {
         center.removeAllDeliveredNotifications()
     }
 
-    private fun identifierFor(kind: ReminderKind): String = "yimalaile.${kind.name}"
+    private fun identifierFor(kind: ReminderKind, slot: Int): String =
+        if (slot == 0) "yimalaile.${kind.name}" else "yimalaile.${kind.name}.$slot"
+
+    private fun identifierFor(reminder: ScheduledReminder): String =
+        identifierFor(reminder.kind, reminder.id - reminder.kind.stableId * 1000)
 }

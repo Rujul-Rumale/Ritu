@@ -29,7 +29,7 @@ import yimalaile.composeapp.generated.resources.Res
 import yimalaile.composeapp.generated.resources.legend_today
 import kotlin.time.Clock
 
-private val TODAY_GREEN = Color(0xFF4CAF50)
+private val TODAY_GREEN = Color(0xFF43A047)
 
 /**
  * Minimal horizontal scrolling calendar strip showing ~90 days.

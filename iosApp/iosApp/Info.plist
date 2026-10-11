@@ -5,8 +5,8 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>YIMA reads your menstrual cycle data from Apple Health to keep your records in sync.</string>
+	<string>Ritu reads your menstrual cycle data from Apple Health to keep your records in sync.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>YIMA writes your menstrual cycle data to Apple Health so it's available in your health dashboard.</string>
+	<string>Ritu writes your menstrual cycle data to Apple Health so it's available in your health dashboard.</string>
 </dict>
 </plist>

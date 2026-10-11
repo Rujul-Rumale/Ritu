@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,13 +35,21 @@ import yimalaile.composeapp.generated.resources.onboarding_back
 import yimalaile.composeapp.generated.resources.onboarding_continue
 import yimalaile.composeapp.generated.resources.onboarding_cycle_length_label
 import yimalaile.composeapp.generated.resources.onboarding_cycle_settings_hint
+import yimalaile.composeapp.generated.resources.onboarding_cycle_settings_hint_me
 import yimalaile.composeapp.generated.resources.onboarding_cycle_settings_title
+import yimalaile.composeapp.generated.resources.onboarding_cycle_settings_title_me
 import yimalaile.composeapp.generated.resources.onboarding_period_duration_label
+import yimalaile.composeapp.generated.resources.onboarding_person_name_hint
+import yimalaile.composeapp.generated.resources.onboarding_person_name_label
 import yimalaile.composeapp.generated.resources.onboarding_synthetic_hint
+import yimalaile.composeapp.generated.resources.onboarding_synthetic_hint_me
 import yimalaile.composeapp.generated.resources.unit_days
 
 @Composable
 internal fun CycleSettingsStep(
+    isForMe: Boolean,
+    personName: String,
+    onPersonNameChange: (String) -> Unit,
     cycleLength: Int,
     periodDuration: Int,
     onCycleLengthChange: (Int) -> Unit,
@@ -54,7 +63,10 @@ internal fun CycleSettingsStep(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            stringResource(Res.string.onboarding_cycle_settings_title),
+            stringResource(
+                if (isForMe) Res.string.onboarding_cycle_settings_title_me
+                else Res.string.onboarding_cycle_settings_title
+            ),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
@@ -62,7 +74,10 @@ internal fun CycleSettingsStep(
         )
         SmallSpacer(8)
         Text(
-            stringResource(Res.string.onboarding_cycle_settings_hint),
+            stringResource(
+                if (isForMe) Res.string.onboarding_cycle_settings_hint_me
+                else Res.string.onboarding_cycle_settings_hint
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -70,6 +85,19 @@ internal fun CycleSettingsStep(
         )
 
         Spacer(Modifier.weight(0.3f))
+
+        if (!isForMe) {
+            OutlinedTextField(
+                value = personName,
+                onValueChange = { onPersonNameChange(it.take(30)) },
+                label = { Text(stringResource(Res.string.onboarding_person_name_label)) },
+                placeholder = { Text(stringResource(Res.string.onboarding_person_name_hint)) },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            SmallSpacer(24)
+        }
 
         ValueSlider(
             label = stringResource(Res.string.onboarding_period_duration_label),
@@ -111,7 +139,10 @@ internal fun CycleSettingsStep(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        stringResource(Res.string.onboarding_synthetic_hint),
+                        stringResource(
+                            if (isForMe) Res.string.onboarding_synthetic_hint_me
+                            else Res.string.onboarding_synthetic_hint
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

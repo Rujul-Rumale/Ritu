@@ -1,52 +1,41 @@
 package com.haodong.yimalaile
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.haodong.yimalaile.domain.export.ExportResult
 import com.haodong.yimalaile.domain.export.ReportExportService
-import com.haodong.yimalaile.domain.health.HealthAuthStatus
-import com.haodong.yimalaile.domain.health.HealthSyncManager
 import com.haodong.yimalaile.domain.menstrual.MenstrualService
 import com.haodong.yimalaile.domain.notifications.NotificationPrefs
 import com.haodong.yimalaile.domain.notifications.NotificationService
+import com.haodong.yimalaile.domain.notifications.buildNotificationCopy
+import com.haodong.yimalaile.domain.person.Person
+import com.haodong.yimalaile.domain.person.PersonRepository
 import com.haodong.yimalaile.domain.settings.AppDarkMode
 import com.haodong.yimalaile.domain.settings.SettingsRepository
-import kotlin.time.Clock
 import com.haodong.yimalaile.ui.navigation.DisclaimerRoute
-import com.haodong.yimalaile.ui.navigation.HomeRoute
 import com.haodong.yimalaile.ui.navigation.OnboardingRoute
+import com.haodong.yimalaile.ui.navigation.PeopleRoute
+import com.haodong.yimalaile.ui.navigation.PersonDetailRoute
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
-import yimalaile.composeapp.generated.resources.Res
-import yimalaile.composeapp.generated.resources.notif_daily_body
-import yimalaile.composeapp.generated.resources.notif_daily_title
-import yimalaile.composeapp.generated.resources.notif_ovulation_body
-import yimalaile.composeapp.generated.resources.notif_ovulation_title
-import yimalaile.composeapp.generated.resources.notif_period_body
-import yimalaile.composeapp.generated.resources.notif_period_title
 
 class AppViewModel(
     private val service: MenstrualService,
+    private val personRepository: PersonRepository,
     private val settings: SettingsRepository,
     private val notificationService: NotificationService? = null,
     private val reportExportService: ReportExportService? = null,
-    private val healthSyncManager: HealthSyncManager? = null,
 ) : ViewModel() {
 
     var darkMode by mutableStateOf(AppDarkMode.SYSTEM)
         private set
 
-    var language by mutableStateOf<String?>(null)
-        private set
-
-    var cycleLength by mutableIntStateOf(28)
-        private set
-
-    var periodDuration by mutableIntStateOf(5)
+    var language = "en"
         private set
 
     var startRoute by mutableStateOf<Any?>(null)
@@ -58,50 +47,41 @@ class AppViewModel(
     var notificationPermissionGranted by mutableStateOf(false)
         private set
 
-    var exportStatus by mutableStateOf<ExportStatus>(ExportStatus.Idle)
-        private set
-
     var healthSyncEnabled by mutableStateOf(false)
         private set
 
-    var healthAuthStatus by mutableStateOf(HealthAuthStatus.NOT_AVAILABLE)
+    var exportStatus by mutableStateOf<ExportStatus>(ExportStatus.Idle)
         private set
 
-    var healthLastSync by mutableStateOf(0L)
-        private set
+    private val _people = MutableStateFlow<List<Person>>(emptyList())
+    val people: StateFlow<List<Person>> = _people.asStateFlow()
 
-    var healthSyncInProgress by mutableStateOf(false)
-        private set
+    fun refreshPeople() {
+        viewModelScope.launch { _people.value = personRepository.getPeople() }
+    }
 
     init {
         viewModelScope.launch {
             darkMode = settings.getDarkMode()
-            language = settings.getLanguage()
-            cycleLength = settings.getCycleLength()
-            periodDuration = settings.getPeriodDuration()
             notificationPrefs = settings.getNotificationPrefs()
             notificationPermissionGranted = notificationService?.hasPermission() ?: false
+            healthSyncEnabled = settings.isHealthSyncEnabled()
 
+            val people = personRepository.getPeople()
+            _people.value = people
             val disclaimerAccepted = settings.isDisclaimerAccepted()
-            val state = service.getCycleState(cycleLength)
-            val hasData = state.records.isNotEmpty()
             startRoute = when {
                 !disclaimerAccepted -> DisclaimerRoute
-                !hasData -> OnboardingRoute
-                else -> HomeRoute
+                people.isEmpty() -> OnboardingRoute
+                // A lone "For me" person lands on their own home directly; the
+                // people list stays reachable via its own entry point.
+                people.size == 1 && people[0].isForMe -> PersonDetailRoute(people[0].id)
+                else -> PeopleRoute
             }
 
             // Re-apply the stored schedule on app start so alarms survive
             // app relaunch and preference bundle migrations.
             applySchedule()
-
-            // Health sync
-            healthSyncEnabled = settings.isHealthSyncEnabled()
-            healthLastSync = settings.getHealthLastSync()
-            healthAuthStatus = healthSyncManager?.getAuthStatus() ?: HealthAuthStatus.NOT_AVAILABLE
-            if (healthSyncEnabled && healthAuthStatus == HealthAuthStatus.AUTHORIZED) {
-                syncHealth()
-            }
         }
     }
 
@@ -109,30 +89,6 @@ class AppViewModel(
         viewModelScope.launch {
             darkMode = mode
             settings.setDarkMode(mode)
-        }
-    }
-
-    fun updateLanguage(lang: String?) {
-        viewModelScope.launch {
-            language = lang
-            settings.setLanguage(lang)
-            // Reschedule so reminder copy follows the new language.
-            applySchedule()
-        }
-    }
-
-    fun updateCycleLength(length: Int) {
-        viewModelScope.launch {
-            cycleLength = length
-            settings.setCycleLength(length)
-            applySchedule()
-        }
-    }
-
-    fun updatePeriodDuration(duration: Int) {
-        viewModelScope.launch {
-            periodDuration = duration
-            settings.setPeriodDuration(duration)
         }
     }
 
@@ -175,18 +131,28 @@ class AppViewModel(
     }
 
     /**
-     * Render the full history to a long PNG image and save it to the
-     * device's Pictures folder. [language] picks the report body
-     * language ("en" or "zh") independently of the current UI locale.
+     * Global health-sync toggle. The per-person gate lives in
+     * HealthSyncGate: even when this is on, only Person.isForMe may sync.
      */
-    fun exportReport(language: String) {
+    fun updateHealthSync(enabled: Boolean) {
+        viewModelScope.launch {
+            healthSyncEnabled = enabled
+            settings.setHealthSyncEnabled(enabled)
+        }
+    }
+
+    /**
+     * Render the full history of one person to a long PNG image and save it to
+     * the device's Pictures folder.
+     */
+    fun exportReport(personId: String, language: String) {
         val exporter = reportExportService ?: run {
             exportStatus = ExportStatus.Failure("Export service not available")
             return
         }
         viewModelScope.launch {
             exportStatus = ExportStatus.InProgress
-            val records = service.getAllRecords()
+            val records = service.getAllRecords(personId)
             exportStatus = when (val result = exporter.exportCycleReport(records, language)) {
                 is ExportResult.Success -> ExportStatus.Success(result.displayLocation)
                 is ExportResult.Failure -> ExportStatus.Failure(result.message)
@@ -206,35 +172,6 @@ class AppViewModel(
         }
     }
 
-    // ---------- Health sync ----------
-
-    fun toggleHealthSync(enabled: Boolean) {
-        val manager = healthSyncManager ?: return
-        viewModelScope.launch {
-            if (enabled) {
-                val authorized = manager.requestAuthorization()
-                if (!authorized) return@launch
-                healthAuthStatus = manager.getAuthStatus()
-            }
-            healthSyncEnabled = enabled
-            settings.setHealthSyncEnabled(enabled)
-            if (enabled) syncHealth()
-        }
-    }
-
-    fun syncHealth() {
-        val manager = healthSyncManager ?: return
-        viewModelScope.launch {
-            healthSyncInProgress = true
-            try {
-                manager.sync()
-                healthLastSync = Clock.System.now().toEpochMilliseconds()
-            } finally {
-                healthSyncInProgress = false
-            }
-        }
-    }
-
     /** Public trigger for rescheduling after cycle data changes. */
     fun rescheduleNotifications() {
         viewModelScope.launch { applySchedule() }
@@ -243,15 +180,7 @@ class AppViewModel(
     private suspend fun applySchedule() {
         val svc = notificationService ?: return
         val prefs = notificationPrefs
-        val copy = NotificationService.Copy(
-            periodTitle = getString(Res.string.notif_period_title),
-            periodBody = getString(Res.string.notif_period_body, prefs.periodReminderDaysBefore),
-            ovulationTitle = getString(Res.string.notif_ovulation_title),
-            ovulationBody = getString(Res.string.notif_ovulation_body, prefs.ovulationReminderDaysBefore),
-            dailyTitle = getString(Res.string.notif_daily_title),
-            dailyBody = getString(Res.string.notif_daily_body),
-        )
-        svc.reschedule(prefs = prefs, cycleLength = cycleLength, copy = copy)
+        svc.reschedule(prefs = prefs, copy = buildNotificationCopy(prefs))
     }
 }
 

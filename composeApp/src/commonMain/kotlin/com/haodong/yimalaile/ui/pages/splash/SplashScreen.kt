@@ -7,9 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,20 +33,18 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import yimalaile.composeapp.generated.resources.Res
-import yimalaile.composeapp.generated.resources.app_name
 import yimalaile.composeapp.generated.resources.logo
 import yimalaile.composeapp.generated.resources.splash_built_by
 
 private const val LOGO_DURATION_MS = 700
-private const val NAME_DURATION_MS = 450
 private const val BRAND_DURATION_MS = 750
 private const val BRAND_DELAY_MS = 600L
 private const val MIN_VISIBLE_AFTER_BRAND_MS = 700L
 
 /**
- * Brand splash. Logo + app name fade and lift in; the "Built by Novawerk"
+ * Brand splash. Logo fades and lifts in; the "Built by Rujul"
  * tagline floats up from the bottom slightly later — a stage that the
- * studio's name slips onto without stealing the show.
+ * maker's name slips onto without stealing the show.
  *
  * Stays visible until both the entrance animation has settled AND
  * upstream state ([ready]) is loaded, then calls [onFinish].
@@ -61,7 +57,6 @@ fun SplashScreen(
     val logoAlpha = remember { Animatable(0f) }
     val logoScale = remember { Animatable(0.86f) }
     val logoOffsetDp = remember { Animatable(12f) }
-    val nameAlpha = remember { Animatable(0f) }
     val brandAlpha = remember { Animatable(0f) }
     val brandOffsetDp = remember { Animatable(40f) }
 
@@ -69,11 +64,6 @@ fun SplashScreen(
         launch { logoAlpha.animateTo(1f, tween(LOGO_DURATION_MS, easing = FastOutSlowInEasing)) }
         launch { logoScale.animateTo(1f, tween(LOGO_DURATION_MS + 100, easing = FastOutSlowInEasing)) }
         launch { logoOffsetDp.animateTo(0f, tween(LOGO_DURATION_MS, easing = FastOutSlowInEasing)) }
-    }
-
-    LaunchedEffect(Unit) {
-        delay(LOGO_DURATION_MS / 2L)
-        nameAlpha.animateTo(1f, tween(NAME_DURATION_MS, easing = FastOutSlowInEasing))
     }
 
     var brandSettled by remember { mutableStateOf(false) }
@@ -112,13 +102,6 @@ fun SplashScreen(
                             scaleX = logoScale.value
                             scaleY = logoScale.value
                         },
-                )
-                Spacer(Modifier.height(20.dp))
-                Text(
-                    text = stringResource(Res.string.app_name),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.alpha(nameAlpha.value),
                 )
             }
 

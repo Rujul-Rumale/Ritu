@@ -77,10 +77,13 @@ val LocalSheetViewModel = staticCompositionLocalOf<SheetViewModel> {
 }
 
 // ============================================================
-// SheetViewModel — owns service, exposes suspend APIs
+// SheetViewModel — owns service + person scope, exposes suspend APIs
 // ============================================================
 
-class SheetViewModel(private val service: MenstrualService) : ViewModel() {
+class SheetViewModel(
+    private val service: MenstrualService,
+    private val personId: String,
+) : ViewModel() {
     fun getService() = service
 
     private val _activeSheet = MutableStateFlow<SheetRequest?>(null)
@@ -130,7 +133,7 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
      */
     suspend fun recordPeriodStart(preferredStart: LocalDate? = null): AddRecordResult? {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val state = service.getCycleState()
+        val state = service.getCycleState(personId)
         val records = state.records
 
         // Min date: day after the last record's end date
@@ -168,13 +171,13 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
             if (end == null) return null  // User dismissed the end date picker
         }
 
-        return service.recordPeriodStart(start, end).also { _dataChanged.tryEmit(Unit) }
+        return service.recordPeriodStart(personId, start, end).also { _dataChanged.tryEmit(Unit) }
     }
 
     /** "姨妈走了" — record period departure */
     suspend fun recordPeriodEnd(): Boolean? {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val state = service.getCycleState()
+        val state = service.getCycleState(personId)
         val records = state.records
 
         // Find the current active period's start date
@@ -201,12 +204,12 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
             defaultDate = defaultDate,
         ) ?: return null
 
-        return service.recordPeriodEnd(date).also { _dataChanged.tryEmit(Unit) }
+        return service.recordPeriodEnd(personId, date).also { _dataChanged.tryEmit(Unit) }
     }
 
     suspend fun logDay(targetDate: LocalDate? = null): Boolean? {
         val result = showLogDaySheet(targetDate) ?: return null
-        val state = service.getCycleState()
+        val state = service.getCycleState(personId)
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val record = state.currentPeriod
             ?: state.records.maxByOrNull { it.startDate }
@@ -218,7 +221,7 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
             symptoms = result.symptoms,
             notes = result.notes,
         )
-        return service.logDay(record.id, day)
+        return service.logDay(personId, record.id, day)
     }
 
     /** Log a day for a specific record. */
@@ -231,12 +234,12 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
             symptoms = result.symptoms,
             notes = result.notes,
         )
-        return service.logDay(recordId, day)
+        return service.logDay(personId, recordId, day)
     }
 
     /** Show record detail. Returns the action the user chose, or null if dismissed. */
     suspend fun showRecordDetail(record: MenstrualRecord, defaultCycleLength: Int): DetailAction? {
-        val state = service.getCycleState()
+        val state = service.getCycleState(personId)
         val deferred = CompletableDeferred<DetailAction?>()
         _activeSheet.value = SheetRequest.RecordDetail(record, state.records, defaultCycleLength, deferred)
         return deferred.await().also { _activeSheet.value = null }
@@ -247,7 +250,7 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
      * Callers don't need to handle DetailAction — just call and forget.
      */
     suspend fun showAndHandleRecordDetail(record: MenstrualRecord, defaultCycleLength: Int) {
-        val allRecords = service.getCycleState().records.filter { !it.isDeleted }.sortedBy { it.startDate }
+        val allRecords = service.getCycleState(personId).records.filter { !it.isDeleted }.sortedBy { it.startDate }
         val action = showRecordDetail(record, defaultCycleLength) ?: return
         when (action) {
             is DetailAction.EditStart -> {
@@ -263,7 +266,7 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
                     defaultDate = record.startDate
                 )
                 if (newStart != null) {
-                    service.editRecordDates(record.id, newStart = newStart, newEnd = null)
+                    service.editRecordDates(personId, record.id, newStart = newStart, newEnd = null)
                 }
             }
             is DetailAction.EditEnd -> {
@@ -279,12 +282,12 @@ class SheetViewModel(private val service: MenstrualService) : ViewModel() {
                     defaultDate = record.endDate ?: Clock.System.todayIn(TimeZone.currentSystemDefault())
                 )
                 if (newEnd != null) {
-                    service.editRecordDates(record.id, newStart = null, newEnd = newEnd)
+                    service.editRecordDates(personId, record.id, newStart = null, newEnd = newEnd)
                 }
             }
             is DetailAction.LogDay -> logDay()
             is DetailAction.LogSpecificDay -> logDayForRecord(record.id, action.date)
-            is DetailAction.Delete -> service.deleteRecord(record.id)
+            is DetailAction.Delete -> service.deleteRecord(personId, record.id)
         }
         _dataChanged.tryEmit(Unit)
     }

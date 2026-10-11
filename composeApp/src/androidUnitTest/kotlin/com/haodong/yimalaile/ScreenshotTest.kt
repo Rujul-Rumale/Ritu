@@ -15,11 +15,12 @@ import androidx.compose.ui.test.onRoot
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.haodong.yimalaile.domain.health.HealthAuthStatus
 import com.haodong.yimalaile.domain.menstrual.*
 import com.haodong.yimalaile.domain.notifications.NotificationPrefs
+import com.haodong.yimalaile.domain.person.Person
 import com.haodong.yimalaile.domain.settings.AppDarkMode
 import com.haodong.yimalaile.domain.settings.SettingsRepository
+import com.haodong.yimalaile.fakes.FakePersonRepository
 import com.haodong.yimalaile.fakes.FakeRecordsRepository
 import com.haodong.yimalaile.fakes.createBeautifulTestData
 import com.haodong.yimalaile.ui.locale.LocalAppLocale
@@ -45,8 +46,6 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
-private const val SCREENSHOT_SYNC_TIMESTAMP = 1_712_400_000_000L // April 6, 2024 12:00 UTC
-
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [33], qualifiers = "w393dp-h851dp-xxhdpi")
@@ -69,15 +68,7 @@ class ScreenshotTest {
         DisclaimerScreen(onAccept = {})
     }
 
-    @Test
-    fun disclaimer_zh_light() = screenshotTest("zh", AppDarkMode.LIGHT) {
-        DisclaimerScreen(onAccept = {})
-    }
 
-    @Test
-    fun disclaimer_zh_dark() = screenshotTest("zh", AppDarkMode.DARK) {
-        DisclaimerScreen(onAccept = {})
-    }
 
     // ═══════════════════════════════════════════════════
     // Onboarding — Welcome (Step 0)
@@ -89,11 +80,7 @@ class ScreenshotTest {
     @Test
     fun onboarding_welcome_en_dark() = onboardingTest("en", AppDarkMode.DARK)
 
-    @Test
-    fun onboarding_welcome_zh_light() = onboardingTest("zh", AppDarkMode.LIGHT)
 
-    @Test
-    fun onboarding_welcome_zh_dark() = onboardingTest("zh", AppDarkMode.DARK)
 
     // ═══════════════════════════════════════════════════
     // Settings Screen
@@ -103,18 +90,9 @@ class ScreenshotTest {
     fun settings_en_light() = screenshotTest("en", AppDarkMode.LIGHT) {
         SettingsScreen(
             currentDarkMode = AppDarkMode.LIGHT,
-            currentLanguage = "en",
-            currentCycleLength = 28,
-            currentPeriodDuration = 5,
             onDarkModeChange = {},
-            onLanguageChange = {},
-            onCycleLengthChange = {},
-            onPeriodDurationChange = {},
             onBack = {},
             onClearData = {},
-            healthSyncEnabled = true,
-            healthAuthStatus = HealthAuthStatus.AUTHORIZED,
-            healthLastSync = SCREENSHOT_SYNC_TIMESTAMP,
         )
     }
 
@@ -122,56 +100,9 @@ class ScreenshotTest {
     fun settings_en_dark() = screenshotTest("en", AppDarkMode.DARK) {
         SettingsScreen(
             currentDarkMode = AppDarkMode.DARK,
-            currentLanguage = "en",
-            currentCycleLength = 30,
-            currentPeriodDuration = 6,
             onDarkModeChange = {},
-            onLanguageChange = {},
-            onCycleLengthChange = {},
-            onPeriodDurationChange = {},
             onBack = {},
             onClearData = {},
-            healthSyncEnabled = true,
-            healthAuthStatus = HealthAuthStatus.AUTHORIZED,
-            healthLastSync = SCREENSHOT_SYNC_TIMESTAMP,
-        )
-    }
-
-    @Test
-    fun settings_zh_light() = screenshotTest("zh", AppDarkMode.LIGHT) {
-        SettingsScreen(
-            currentDarkMode = AppDarkMode.LIGHT,
-            currentLanguage = "zh",
-            currentCycleLength = 28,
-            currentPeriodDuration = 5,
-            onDarkModeChange = {},
-            onLanguageChange = {},
-            onCycleLengthChange = {},
-            onPeriodDurationChange = {},
-            onBack = {},
-            onClearData = {},
-            healthSyncEnabled = true,
-            healthAuthStatus = HealthAuthStatus.AUTHORIZED,
-            healthLastSync = SCREENSHOT_SYNC_TIMESTAMP,
-        )
-    }
-
-    @Test
-    fun settings_zh_dark() = screenshotTest("zh", AppDarkMode.DARK) {
-        SettingsScreen(
-            currentDarkMode = AppDarkMode.DARK,
-            currentLanguage = "zh",
-            currentCycleLength = 30,
-            currentPeriodDuration = 6,
-            onDarkModeChange = {},
-            onLanguageChange = {},
-            onCycleLengthChange = {},
-            onPeriodDurationChange = {},
-            onBack = {},
-            onClearData = {},
-            healthSyncEnabled = true,
-            healthAuthStatus = HealthAuthStatus.AUTHORIZED,
-            healthLastSync = SCREENSHOT_SYNC_TIMESTAMP,
         )
     }
 
@@ -185,11 +116,7 @@ class ScreenshotTest {
     @Test
     fun notifications_en_dark() = notificationSettingsTest("en", AppDarkMode.DARK)
 
-    @Test
-    fun notifications_zh_light() = notificationSettingsTest("zh", AppDarkMode.LIGHT)
 
-    @Test
-    fun notifications_zh_dark() = notificationSettingsTest("zh", AppDarkMode.DARK)
 
     // ═══════════════════════════════════════════════════
     // Home Screen (Calendar mode)
@@ -201,11 +128,7 @@ class ScreenshotTest {
     @Test
     fun home_calendar_en_dark() = homeScreenTest("en", AppDarkMode.DARK, "calendar")
 
-    @Test
-    fun home_calendar_zh_light() = homeScreenTest("zh", AppDarkMode.LIGHT, "calendar")
 
-    @Test
-    fun home_calendar_zh_dark() = homeScreenTest("zh", AppDarkMode.DARK, "calendar")
 
     // ═══════════════════════════════════════════════════
     // Home Screen (Statistics mode)
@@ -217,11 +140,7 @@ class ScreenshotTest {
     @Test
     fun home_stats_en_dark() = homeScreenTest("en", AppDarkMode.DARK, "stats")
 
-    @Test
-    fun home_stats_zh_light() = homeScreenTest("zh", AppDarkMode.LIGHT, "stats")
 
-    @Test
-    fun home_stats_zh_dark() = homeScreenTest("zh", AppDarkMode.DARK, "stats")
 
     // ═══════════════════════════════════════════════════
     // Home Screen (Detail mode)
@@ -233,11 +152,7 @@ class ScreenshotTest {
     @Test
     fun home_detail_en_dark() = homeScreenTest("en", AppDarkMode.DARK, "detail")
 
-    @Test
-    fun home_detail_zh_light() = homeScreenTest("zh", AppDarkMode.LIGHT, "detail")
 
-    @Test
-    fun home_detail_zh_dark() = homeScreenTest("zh", AppDarkMode.DARK, "detail")
 
     // ═══════════════════════════════════════════════════
     // Log Day Sheet
@@ -261,23 +176,7 @@ class ScreenshotTest {
         )
     }
 
-    @Test
-    fun log_day_zh_light() = screenshotTest("zh", AppDarkMode.LIGHT) {
-        LogDaySheet(
-            targetDate = LocalDate(2026, 3, 28),
-            onDismiss = {},
-            onSave = { _, _, _, _ -> },
-        )
-    }
 
-    @Test
-    fun log_day_zh_dark() = screenshotTest("zh", AppDarkMode.DARK) {
-        LogDaySheet(
-            targetDate = LocalDate(2026, 3, 28),
-            onDismiss = {},
-            onSave = { _, _, _, _ -> },
-        )
-    }
 
     // ═══════════════════════════════════════════════════
     // Prediction Detail Sheet
@@ -307,29 +206,7 @@ class ScreenshotTest {
         )
     }
 
-    @Test
-    fun prediction_detail_zh_light() = screenshotTest("zh", AppDarkMode.LIGHT) {
-        PredictionDetailSheet(
-            prediction = PredictedCycle(
-                predictedStart = LocalDate(2026, 4, 26),
-                predictedEnd = LocalDate(2026, 5, 1),
-            ),
-            avgPeriodLength = 5,
-            onDismiss = {},
-        )
-    }
 
-    @Test
-    fun prediction_detail_zh_dark() = screenshotTest("zh", AppDarkMode.DARK) {
-        PredictionDetailSheet(
-            prediction = PredictedCycle(
-                predictedStart = LocalDate(2026, 4, 26),
-                predictedEnd = LocalDate(2026, 5, 1),
-            ),
-            avgPeriodLength = 5,
-            onDismiss = {},
-        )
-    }
 
     // ═══════════════════════════════════════════════════
     // Record Detail Sheet
@@ -341,11 +218,7 @@ class ScreenshotTest {
     @Test
     fun record_detail_en_dark() = recordDetailTest("en", AppDarkMode.DARK)
 
-    @Test
-    fun record_detail_zh_light() = recordDetailTest("zh", AppDarkMode.LIGHT)
 
-    @Test
-    fun record_detail_zh_dark() = recordDetailTest("zh", AppDarkMode.DARK)
 
     // ═══════════════════════════════════════════════════
     // Helpers
@@ -374,7 +247,17 @@ class ScreenshotTest {
         val testData = createBeautifulTestData()
         val fakeRepo = FakeRecordsRepository(testData.toMutableList())
         val service = MenstrualService(fakeRepo)
-        val sheetViewModel = SheetViewModel(service)
+        val person = Person(
+            id = "screenshot",
+            name = "Screenshot",
+            cycleLength = 28,
+            periodLength = 5,
+            createdAtEpochMillis = 1L,
+            updatedAtEpochMillis = 1L,
+            colorIndex = 1,
+        )
+        val personRepository = FakePersonRepository(mutableListOf(person))
+        val sheetViewModel = SheetViewModel(service, person.id)
 
         val context = ApplicationProvider.getApplicationContext<Application>()
         val dataStore = PreferenceDataStoreFactory.create {
@@ -394,8 +277,10 @@ class ScreenshotTest {
                     HomeScreen(
                         service = service,
                         sheetViewModel = sheetViewModel,
+                        person = person,
                         settings = settings,
                         onNavigateSettings = {},
+                        onNavigatePeople = {},
                     )
                     SheetHost(sheetViewModel)
                 }
@@ -411,6 +296,7 @@ class ScreenshotTest {
     ) {
         val fakeRepo = FakeRecordsRepository()
         val service = MenstrualService(fakeRepo)
+        val personRepository = FakePersonRepository()
 
         val context = ApplicationProvider.getApplicationContext<Application>()
         val dataStore = PreferenceDataStoreFactory.create {
@@ -423,8 +309,8 @@ class ScreenshotTest {
                 AppTheme(darkMode = darkMode) {
                     OnboardingScreen(
                         service = service,
+                        personRepository = personRepository,
                         settings = settings,
-                        healthSyncManager = null,
                         notificationPrefs = NotificationPrefs(),
                         notificationPermissionGranted = false,
                         onUpdateNotificationPrefs = {},

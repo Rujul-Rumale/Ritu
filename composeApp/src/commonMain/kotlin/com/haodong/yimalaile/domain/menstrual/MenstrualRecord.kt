@@ -6,6 +6,7 @@ enum class RecordSource { MANUAL, PREDICTION, AUTO_CONFIRMED, HEALTH_IMPORT }
 
 data class MenstrualRecord(
     val id: String,
+    val personId: String,
     val startDate: LocalDate,
     val endDate: LocalDate? = null,
     val endConfirmed: Boolean = false,

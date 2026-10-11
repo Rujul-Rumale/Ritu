@@ -1,19 +1,21 @@
 package com.haodong.yimalaile.ui.pages.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.*
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -50,7 +52,6 @@ internal fun HomeCalendar(
     val dateMap = buildDateMap(state, phaseInfo, today)
     val inPeriod = state.inPeriod
     val dayCount = phaseInfo?.dayInCycle
-
     val periodColor = MaterialTheme.colorScheme.error
     val periodLight = MaterialTheme.colorScheme.error.copy(alpha = 0.45f)
 
@@ -66,9 +67,7 @@ internal fun HomeCalendar(
     } else emptySet()
 
     val currentMonth = YearMonth(today.year, today.month)
-
     var showPhaseSheet by remember { mutableStateOf(false) }
-
     val lastPeriod = state.records.maxByOrNull { it.startDate }
     val nextStart = phaseInfo?.nextPeriodStart
 
@@ -92,20 +91,22 @@ internal fun HomeCalendar(
             }
             if (lastPeriod != null || nextStart != null) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(0.65f),
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(0.65f).height(IntrinsicSize.Min),
+                    verticalAlignment = Alignment.Top,
                 ) {
                     InfoColumn(
                         label = stringResource(Res.string.home_last_period),
                         value = lastPeriod?.let { formatDateWithWeekday(it.startDate) },
                         modifier = Modifier.weight(1f),
                     )
-                    VerticalDivider(
-                        modifier = Modifier.height(36.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant,
+                    Box(
+                        Modifier.padding(horizontal = 8.dp)
+                            .width(1.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.outlineVariant),
                     )
                     InfoColumn(
-                        label = stringResource(Res.string.home_next_period_starts),
+                        label = stringResource(Res.string.home_info_next),
                         value = nextStart?.let { formatDateWithWeekday(it) },
                         modifier = Modifier.weight(1f),
                     )
@@ -186,9 +187,9 @@ private fun HeroCountdown(
                         )
                         Text(
                             stringResource(Res.string.unit_days),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
                 }
@@ -201,7 +202,7 @@ private fun HeroCountdown(
                     else -> stringResource(Res.string.home_next_period_starts)
                 },
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
             )
         }
     }
@@ -221,6 +222,8 @@ private fun InfoColumn(
             label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
         )
         SmallSpacer(2)
         Text(
@@ -228,6 +231,8 @@ private fun InfoColumn(
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
         )
     }
 }
@@ -237,14 +242,14 @@ private fun formatYearMonth(year: Int, month: Month): String {
     return "$monthName $year"
 }
 
-private fun formatDateWithWeekday(date: LocalDate): String {
-    val formatted = date.format(LocalDate.Format {
+
+private fun formatDateWithWeekday(date: LocalDate): String {    val formatted = date.format(LocalDate.Format {
         monthNumber()
         chars("/")
         day()
     })
     val weekday = date.dayOfWeek.getDisplayName(TextStyle.FULL)
-    return "$formatted $weekday"
+    return "$formatted\n$weekday"
 }
 
 private data class YearMonth(val year: Int, val month: Month)
@@ -282,7 +287,7 @@ private fun MonthBlock(
         Text(
             formatYearMonth(yearMonth.year, yearMonth.month),
             style = MaterialTheme.typography.bodyMedium,
-            color = onSurface.copy(alpha = 0.7f),
+            color = onSurface.copy(alpha = 0.85f),
         )
         SmallSpacer(6)
 
@@ -302,6 +307,7 @@ private fun MonthBlock(
                         val isToday = date == today
                         val isFuture = date > today
 
+
                         val isPeriod = type == DayType.PERIOD
                         val isPredictedPeriod = type == DayType.PREDICTED_PERIOD
                         val isNextPredicted = date in nextPredictedDates
@@ -315,12 +321,12 @@ private fun MonthBlock(
                             isToday -> Color.White
                             isPeriod -> Color.White
                             isPredictedPeriod || isNextPredicted -> Color.White
-                            isFuture -> onSurface.copy(alpha = 0.15f)
-                            else -> onSurface.copy(alpha = 0.45f)
+                            isFuture -> onSurface.copy(alpha = 0.35f)
+                            else -> onSurface.copy(alpha = 0.6f)
                         }
-                        val showNumber = isToday || isPeriod || isPredictedPeriod || isNextPredicted
+                                                val showNumber = isToday || isPeriod || isPredictedPeriod || isNextPredicted
 
-                        val clickable = isPeriod && records.isNotEmpty()
+                        val clickable = isPeriod || isPredictedPeriod || isNextPredicted || isToday
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
@@ -333,12 +339,16 @@ private fun MonthBlock(
                                 )
                                 .then(
                                     if (clickable) Modifier.clip(cellShape).clickable {
-                                        val record = records.find { r ->
-                                            val rEnd = r.endDate ?: today
-                                            date in r.startDate..rEnd
-                                        }
-                                        if (record != null) {
-                                            scope.launch { sheetViewModel.showAndHandleRecordDetail(record, defaultCycleLength) }
+                                        if (isPeriod) {
+                                            val record = records.find { r ->
+                                                val rEnd = r.endDate ?: today
+                                                date in r.startDate..rEnd
+                                            }
+                                            if (record != null) {
+                                                scope.launch { sheetViewModel.showAndHandleRecordDetail(record, defaultCycleLength) }
+                                            }
+                                        } else {
+                                            scope.launch { sheetViewModel.recordPeriodStart(preferredStart = date) }
                                         }
                                     } else Modifier
                                 ),

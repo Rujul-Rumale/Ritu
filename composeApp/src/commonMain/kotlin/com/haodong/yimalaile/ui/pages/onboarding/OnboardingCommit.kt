@@ -1,17 +1,11 @@
 package com.haodong.yimalaile.ui.pages.onboarding
 
 import com.haodong.yimalaile.domain.menstrual.MenstrualService
-import com.haodong.yimalaile.domain.settings.SettingsRepository
-import kotlinx.datetime.DateTimeUnit
+import com.haodong.yimalaile.domain.person.DEFAULT_PERSON_NAME
+import com.haodong.yimalaile.domain.person.Person
+import com.haodong.yimalaile.domain.person.PersonRepository
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
 import kotlin.time.Clock
-
-/** A meaningful threshold for "we have enough cycles to predict without padding". */
-internal const val ENOUGH_RECORDS_FOR_PREDICTION = 3
 
 /** What the user told us during the period-status step. */
 internal sealed interface PeriodEntry {
@@ -26,52 +20,43 @@ internal sealed interface PeriodEntry {
 }
 
 /**
- * Persist the onboarding result.
+ * Persist the onboarding result as a new person.
  *
- * - Saves cycle settings.
+ * - Creates the [Person] and stores the per-person cycle settings.
  * - Writes the manually-entered period (active or ended), if any.
  * - Pads with synthetic past cycles when we don't already have enough data
  *   for predictions to feel useful. If the user gave us nothing at all,
- *   we anchor the synthetic series one cycle in the past so predictions
+ *   the synthetic series is anchored one cycle in the past so predictions
  *   still have something to project forward from.
  */
 internal suspend fun commitOnboarding(
     service: MenstrualService,
-    settings: SettingsRepository,
+    personRepository: PersonRepository,
+    personName: String,
+    isForMe: Boolean,
     cycleLength: Int,
     periodDuration: Int,
     entry: PeriodEntry,
-) {
-    settings.setCycleLength(cycleLength)
-    settings.setPeriodDuration(periodDuration)
+): Person {
+    val now = Clock.System.now().toEpochMilliseconds()
+    val personId = "person_${now}"
+    val person = Person(
+        id = personId,
+        name = if (isForMe) DEFAULT_PERSON_NAME else personName.trim().ifEmpty { DEFAULT_PERSON_NAME },
+        cycleLength = cycleLength,
+        periodLength = periodDuration,
+        createdAtEpochMillis = now,
+        updatedAtEpochMillis = now,
+        isForMe = isForMe,
+    )
+    personRepository.insertPerson(person)
 
     when (entry) {
-        is PeriodEntry.Active -> service.recordPeriodStart(entry.start)
-        is PeriodEntry.Ended -> service.backfillPeriod(entry.start, entry.end)
+        is PeriodEntry.Active -> service.recordPeriodStart(personId, entry.start)
+        is PeriodEntry.Ended -> service.backfillPeriod(personId, entry.start, entry.end)
         PeriodEntry.None -> Unit
     }
 
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    var state = service.getCycleState(cycleLength)
-
-    // If no records at all (user picked "unsure"), seed a synthetic anchor
-    // ~one cycle ago so predictions have a starting point. Past records still
-    // get added by the loop below.
-    if (state.records.isEmpty()) {
-        val anchorStart = today.minus(cycleLength, DateTimeUnit.DAY)
-        val anchorEnd = anchorStart.plus(periodDuration - 1, DateTimeUnit.DAY)
-        service.backfillPeriod(anchorStart, anchorEnd)
-        state = service.getCycleState(cycleLength)
-    }
-
-    val recordsCount = state.records.size
-    if (recordsCount >= ENOUGH_RECORDS_FOR_PREDICTION) return
-
-    val anchor = state.records.minByOrNull { it.startDate }?.startDate ?: return
-    val needed = ENOUGH_RECORDS_FOR_PREDICTION + 2 - recordsCount
-    for (i in 1..needed) {
-        val pastStart = anchor.minus(cycleLength * i, DateTimeUnit.DAY)
-        val pastEnd = pastStart.plus(periodDuration - 1, DateTimeUnit.DAY)
-        service.backfillPeriod(pastStart, pastEnd)
-    }
+    service.seedInitialHistory(personId, cycleLength, periodDuration)
+    return person
 }

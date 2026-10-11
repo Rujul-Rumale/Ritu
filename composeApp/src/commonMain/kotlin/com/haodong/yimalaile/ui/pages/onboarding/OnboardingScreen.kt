@@ -19,9 +19,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.haodong.yimalaile.domain.health.HealthSyncManager
+import com.haodong.yimalaile.domain.menstrual.ENOUGH_RECORDS_FOR_PREDICTION
 import com.haodong.yimalaile.domain.menstrual.MenstrualService
 import com.haodong.yimalaile.domain.notifications.NotificationPrefs
+import com.haodong.yimalaile.domain.person.Person
+import com.haodong.yimalaile.domain.person.PersonRepository
 import com.haodong.yimalaile.domain.settings.SettingsRepository
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -31,7 +33,7 @@ import kotlinx.datetime.until
 /** Visual position of each onboarding step (used for the indicator and back nav). */
 internal enum class OnboardingStep {
     Welcome,
-    HealthSync,
+    Purpose,
     PeriodStatus,
     CycleSettings,
     Notifications,
@@ -41,17 +43,22 @@ internal enum class OnboardingStep {
 @Composable
 fun OnboardingScreen(
     service: MenstrualService,
+    personRepository: PersonRepository,
     settings: SettingsRepository,
-    healthSyncManager: HealthSyncManager?,
     notificationPrefs: NotificationPrefs,
     notificationPermissionGranted: Boolean,
     onUpdateNotificationPrefs: (NotificationPrefs) -> Unit,
     onRequestNotificationPermission: () -> Unit,
-    onComplete: () -> Unit,
+    onComplete: (Person) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
 
     var step by remember { mutableStateOf(OnboardingStep.Welcome) }
+
+    // Person identity
+    var personName by remember { mutableStateOf("") }
+    var isForMe by remember { mutableStateOf<Boolean?>(null) }
+    var createdPerson by remember { mutableStateOf<Person?>(null) }
 
     // Period-status state
     var statusOption by remember { mutableStateOf<PeriodStatusOption?>(null) }
@@ -63,29 +70,13 @@ fun OnboardingScreen(
     var cycleLength by remember { mutableIntStateOf(28) }
     var periodDuration by remember { mutableIntStateOf(5) }
 
-    // HealthSync results that influence later steps
-    var importedCount by remember { mutableIntStateOf(0) }
-    var existingRecordCount by remember { mutableIntStateOf(0) }
-    var existingHasActivePeriod by remember { mutableStateOf(false) }
-
-    val periodStatusMode: PeriodStatusMode = when {
-        existingRecordCount > 0 -> PeriodStatusMode.SimpleYesNo
-        else -> PeriodStatusMode.Full
-    }
-
-    // Steps the user actually sees, in order. We:
-    //  - hide HealthSync when the platform doesn't expose a health store,
-    //  - hide PeriodStatus when HealthSync already gave us an active period
-    //    (we know what they'd say), otherwise show it in Simple or Full mode.
-    val orderedSteps: List<OnboardingStep> = remember(healthSyncManager, existingHasActivePeriod) {
-        buildList {
-            add(OnboardingStep.Welcome)
-            if (healthSyncManager != null) add(OnboardingStep.HealthSync)
-            if (!existingHasActivePeriod) add(OnboardingStep.PeriodStatus)
-            add(OnboardingStep.CycleSettings)
-            add(OnboardingStep.Notifications)
-            add(OnboardingStep.AllSet)
-        }
+    val orderedSteps: List<OnboardingStep> = buildList {
+        add(OnboardingStep.Welcome)
+        add(OnboardingStep.Purpose)
+        add(OnboardingStep.PeriodStatus)
+        add(OnboardingStep.CycleSettings)
+        add(OnboardingStep.Notifications)
+        add(OnboardingStep.AllSet)
     }
 
     val totalProgressSteps = orderedSteps.count { it != OnboardingStep.Welcome && it != OnboardingStep.AllSet }
@@ -148,25 +139,15 @@ fun OnboardingScreen(
                 when (current) {
                     OnboardingStep.Welcome -> WelcomeStep(onNext = { goNext() })
 
-                    OnboardingStep.HealthSync -> HealthSyncStep(
-                        healthSyncManager = healthSyncManager ?: return@AnimatedContent,
-                        onConnected = { imported ->
-                            importedCount = imported
-                            scope.launch {
-                                settings.setHealthSyncEnabled(true)
-                                val state = service.getCycleState(cycleLength)
-                                existingRecordCount = state.records.size
-                                existingHasActivePeriod = state.currentPeriod != null
-                                goNext()
-                            }
-                        },
-                        onSkip = { goNext() },
+                    OnboardingStep.Purpose -> PurposeStep(
+                        selected = isForMe,
+                        onSelect = { isForMe = it },
+                        onContinue = { goNext() },
                         onBack = { goBack() },
                     )
 
                     OnboardingStep.PeriodStatus -> PeriodStatusStep(
-                        mode = periodStatusMode,
-                        importedCount = importedCount,
+                        isForMe = isForMe == true,
                         selected = statusOption,
                         activeStart = activeStart,
                         endedStart = endedStart,
@@ -194,11 +175,14 @@ fun OnboardingScreen(
                     )
 
                     OnboardingStep.CycleSettings -> {
-                        val plannedCount = existingRecordCount + when (statusOption) {
+                        val plannedCount = when (statusOption) {
                             PeriodStatusOption.Active, PeriodStatusOption.Ended -> 1
                             PeriodStatusOption.Unsure, null -> 0
                         }
                         CycleSettingsStep(
+                            isForMe = isForMe == true,
+                            personName = personName,
+                            onPersonNameChange = { personName = it },
                             cycleLength = cycleLength,
                             periodDuration = periodDuration,
                             onCycleLengthChange = { cycleLength = it },
@@ -216,25 +200,33 @@ fun OnboardingScreen(
                         onRequestPermission = onRequestNotificationPermission,
                         onContinue = {
                             scope.launch {
-                                commitOnboarding(
-                                    service = service,
-                                    settings = settings,
-                                    cycleLength = cycleLength,
-                                    periodDuration = periodDuration,
-                                    entry = resolvePeriodEntry(),
-                                )
+                                if (createdPerson == null) {
+                                    createdPerson = commitOnboarding(
+                                        service = service,
+                                        personRepository = personRepository,
+                                        personName = personName,
+                                        isForMe = isForMe == true,
+                                        cycleLength = cycleLength,
+                                        periodDuration = periodDuration,
+                                        entry = resolvePeriodEntry(),
+                                    )
+                                }
                                 goNext()
                             }
                         },
                         onSkip = {
                             scope.launch {
-                                commitOnboarding(
-                                    service = service,
-                                    settings = settings,
-                                    cycleLength = cycleLength,
-                                    periodDuration = periodDuration,
-                                    entry = resolvePeriodEntry(),
-                                )
+                                if (createdPerson == null) {
+                                    createdPerson = commitOnboarding(
+                                        service = service,
+                                        personRepository = personRepository,
+                                        personName = personName,
+                                        isForMe = isForMe == true,
+                                        cycleLength = cycleLength,
+                                        periodDuration = periodDuration,
+                                        entry = resolvePeriodEntry(),
+                                    )
+                                }
                                 goNext()
                             }
                         },
@@ -242,8 +234,8 @@ fun OnboardingScreen(
                     )
 
                     OnboardingStep.AllSet -> AllSetStep(
-                        importedCount = importedCount,
-                        onComplete = onComplete,
+                        isForMe = isForMe == true,
+                        onComplete = { createdPerson?.let(onComplete) },
                     )
                 }
             }

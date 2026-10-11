@@ -18,20 +18,25 @@ class DataStoreDailyNoteRepository(
     private val dataStore: DataStore<Preferences>
 ) : DailyNoteRepository {
 
-    override suspend fun getNote(date: LocalDate): DailyNote? =
-        loadAll().find { it.date == date }
+    override suspend fun getNote(personId: String, date: LocalDate): DailyNote? =
+        loadAll().find { it.personId == personId && it.date == date }
 
-    override suspend fun getAllNotes(): List<DailyNote> = loadAll()
+    override suspend fun getAllNotes(personId: String): List<DailyNote> =
+        loadAll().filter { it.personId == personId }
 
     override suspend fun saveNote(note: DailyNote) {
         val existing = loadAll().toMutableList()
-        val idx = existing.indexOfFirst { it.date == note.date }
+        val idx = existing.indexOfFirst { it.personId == note.personId && it.date == note.date }
         if (idx >= 0) existing[idx] = note else existing.add(note)
         save(existing)
     }
 
-    override suspend fun deleteNote(date: LocalDate) {
-        save(loadAll().filter { it.date != date })
+    override suspend fun deleteNote(personId: String, date: LocalDate) {
+        save(loadAll().filter { !(it.personId == personId && it.date == date) })
+    }
+
+    override suspend fun deleteAllNotesForPerson(personId: String) {
+        save(loadAll().filterNot { it.personId == personId })
     }
 
     private suspend fun loadAll(): List<DailyNote> {
@@ -40,20 +45,14 @@ class DataStoreDailyNoteRepository(
     }
 
     private suspend fun save(notes: List<DailyNote>) {
-        dataStore.edit { prefs -> prefs[NOTES_KEY] = notes.toJson() }
+        dataStore.edit { prefs -> prefs[NOTES_KEY] = notes.toNotesJson() }
     }
 }
 
-private fun List<DailyNote>.toJson(): String =
+private fun List<DailyNote>.toNotesJson(): String =
     "[" + joinToString(",") { n ->
-        """{"date":"${n.date}","mood":"${n.mood?.name ?: ""}","notes":"${(n.notes ?: "").escapeJson()}"}"""
+        """{"personId":"${n.personId}","date":"${n.date}","mood":"${n.mood?.name ?: ""}","notes":"${(n.notes ?: "").escapeJson()}"}"""
     } + "]"
-
-private fun String.escapeJson(): String =
-    replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
-
-private fun String.unescapeJson(): String =
-    replace("\\n", "\n").replace("\\\"", "\"").replace("\\\\", "\\")
 
 private fun String.parseNotes(): List<DailyNote> {
     if (this == "[]" || isBlank()) return emptyList()
@@ -82,6 +81,7 @@ private fun String.parseNotes(): List<DailyNote> {
                     i = valEnd + 1
                 }
                 DailyNote(
+                    personId = map["personId"] ?: "",
                     date = LocalDate.parse(map["date"] ?: ""),
                     mood = map["mood"]?.takeIf { it.isNotBlank() }?.let { Mood.valueOf(it) },
                     notes = map["notes"]?.takeIf { it.isNotBlank() },

@@ -15,7 +15,8 @@ class FakeRecordsRepository(
         return AddRecordResult.Success(record)
     }
 
-    override suspend fun getAllRecords(): List<MenstrualRecord> = records.toList()
+    override suspend fun getAllRecords(personId: String): List<MenstrualRecord> =
+        records.filter { it.personId == personId }
 
     override suspend fun updateRecord(record: MenstrualRecord): Boolean {
         val idx = records.indexOfFirst { it.id == record.id }
@@ -24,8 +25,12 @@ class FakeRecordsRepository(
         return true
     }
 
-    override suspend fun deleteRecord(id: String): Boolean {
-        return records.removeAll { it.id == id }
+    override suspend fun deleteRecord(recordId: String, personId: String): Boolean {
+        return records.removeAll { it.id == recordId && it.personId == personId }
+    }
+
+    override suspend fun deleteAllRecordsForPerson(personId: String) {
+        records.removeAll { it.personId == personId }
     }
 
     override suspend fun clearAll() {
@@ -95,6 +100,7 @@ private fun createRecord(
     }
     return MenstrualRecord(
         id = id,
+        personId = "screenshot",
         startDate = start,
         endDate = end,
         endConfirmed = true,

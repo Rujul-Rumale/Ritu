@@ -42,6 +42,7 @@ internal fun DetailCalendarView(
     cycleState: CycleState,
     phaseInfo: CyclePhaseInfo?,
     service: MenstrualService,
+    personId: String,
     onRefresh: () -> Unit,
     selectedDate: LocalDate?,
     onSelectedDateChange: (LocalDate?) -> Unit,
@@ -98,6 +99,7 @@ internal fun DetailCalendarView(
             cycleState.predictions.forEach { pred ->
                 val tempRecord = MenstrualRecord(
                     id = "temp",
+                    personId = personId,
                     startDate = pred.predictedStart,
                     endDate = pred.predictedEnd,
                     createdAtEpochMillis = 0L,
@@ -227,7 +229,7 @@ internal fun DetailCalendarView(
             // ListItem 2: Current phase (clickable → opens phase sheet)
             item {
                 val isPeakDay = selectedPhaseInfo.isOvulationPeakDay
-                val ovColor = Color(0xFF7C4DFF)
+                val ovColor = Color(0xFFAD1457)
                 val accentColor = if (isPeakDay) ovColor else phase.color()
                 var showPhaseSheet by remember { mutableStateOf(false) }
                 ListItem(
@@ -307,7 +309,7 @@ internal fun DetailCalendarView(
                 when {
                     isStart -> {
                         FilledTonalButton(
-                            onClick = { scope.launch { service.deleteRecord(containingRecord.id); onRefresh() } },
+                            onClick = { scope.launch { service.deleteRecord(personId, containingRecord.id); onRefresh() } },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(50),
                         ) {
@@ -318,7 +320,7 @@ internal fun DetailCalendarView(
                     }
                     isMidPeriod -> {
                         FilledTonalButton(
-                            onClick = { scope.launch { service.editRecordDates(containingRecord.id, newStart = null, newEnd = date); onRefresh() } },
+                            onClick = { scope.launch { service.editRecordDates(personId, containingRecord.id, newStart = null, newEnd = date); onRefresh() } },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(50),
                         ) {
@@ -333,9 +335,9 @@ internal fun DetailCalendarView(
                             onClick = {
                                 scope.launch {
                                     if (extendBefore) {
-                                        service.editRecordDates(extendableRecord.id, newStart = date, newEnd = null)
+                                        service.editRecordDates(personId, extendableRecord.id, newStart = date, newEnd = null)
                                     } else {
-                                        service.editRecordDates(extendableRecord.id, newStart = null, newEnd = date)
+                                        service.editRecordDates(personId, extendableRecord.id, newStart = null, newEnd = date)
                                     }
                                     onRefresh()
                                 }
@@ -350,7 +352,7 @@ internal fun DetailCalendarView(
                     }
                     containingRecord == null -> {
                         FilledTonalButton(
-                            onClick = { scope.launch { service.recordPeriodStart(date); onRefresh() } },
+                            onClick = { scope.launch { service.recordPeriodStart(personId, date); onRefresh() } },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(50),
                         ) {
@@ -419,7 +421,7 @@ private fun DetailMonthGrid(
     val onSurface = MaterialTheme.colorScheme.onSurface
     val primary = MaterialTheme.colorScheme.primary
     val periodColor = MaterialTheme.colorScheme.error
-    val ovulationColor = Color(0xFF7C4DFF)
+    val ovulationColor = Color(0xFFAD1457)
 
     Column(Modifier.fillMaxWidth()) {
         // Weekday header

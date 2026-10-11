@@ -59,47 +59,38 @@ import yimalaile.composeapp.generated.resources.onboarding_back
 import yimalaile.composeapp.generated.resources.onboarding_continue
 import yimalaile.composeapp.generated.resources.onboarding_status_active_start_label
 import yimalaile.composeapp.generated.resources.onboarding_status_active_subtitle
+import yimalaile.composeapp.generated.resources.onboarding_status_active_subtitle_me
 import yimalaile.composeapp.generated.resources.onboarding_status_active_title
+import yimalaile.composeapp.generated.resources.onboarding_status_active_title_me
 import yimalaile.composeapp.generated.resources.onboarding_status_ended_end_label
 import yimalaile.composeapp.generated.resources.onboarding_status_ended_start_label
 import yimalaile.composeapp.generated.resources.onboarding_status_ended_subtitle
+import yimalaile.composeapp.generated.resources.onboarding_status_ended_subtitle_me
 import yimalaile.composeapp.generated.resources.onboarding_status_ended_title
-import yimalaile.composeapp.generated.resources.onboarding_status_imported_chip
+import yimalaile.composeapp.generated.resources.onboarding_status_ended_title_me
 import yimalaile.composeapp.generated.resources.onboarding_status_pick_date
 import yimalaile.composeapp.generated.resources.onboarding_status_pick_end
 import yimalaile.composeapp.generated.resources.onboarding_status_pick_start
-import yimalaile.composeapp.generated.resources.onboarding_status_simple_no_subtitle
-import yimalaile.composeapp.generated.resources.onboarding_status_simple_no_title
-import yimalaile.composeapp.generated.resources.onboarding_status_simple_subtitle
-import yimalaile.composeapp.generated.resources.onboarding_status_simple_title
 import yimalaile.composeapp.generated.resources.onboarding_status_subtitle
+import yimalaile.composeapp.generated.resources.onboarding_status_subtitle_me
 import yimalaile.composeapp.generated.resources.onboarding_status_title
+import yimalaile.composeapp.generated.resources.onboarding_status_title_me
 import yimalaile.composeapp.generated.resources.onboarding_status_unsure_hint
 import yimalaile.composeapp.generated.resources.onboarding_status_unsure_subtitle
+import yimalaile.composeapp.generated.resources.onboarding_status_unsure_subtitle_me
 import yimalaile.composeapp.generated.resources.onboarding_status_unsure_title
 import kotlin.time.Clock
-
-/** Layout variants for the period-status step. */
-internal enum class PeriodStatusMode {
-    /** New user with no history — three options including "I'm not sure". */
-    Full,
-
-    /** User already imported records via HealthSync — only ask if currently bleeding. */
-    SimpleYesNo,
-}
 
 /** Which option the user has tapped. */
 internal enum class PeriodStatusOption { Active, Ended, Unsure }
 
 /**
  * Asks the user what state they're in: currently on their period, just finished,
- * or unsure. Adapts to [mode] — the SimpleYesNo variant hides the "ended" option
- * since we already have history from HealthSync.
+ * or unsure.
  */
 @Composable
 internal fun PeriodStatusStep(
-    mode: PeriodStatusMode,
-    importedCount: Int,
+    isForMe: Boolean,
     selected: PeriodStatusOption?,
     activeStart: LocalDate?,
     endedStart: LocalDate?,
@@ -123,21 +114,15 @@ internal fun PeriodStatusStep(
         null -> false
     }
 
-    val titleRes = when (mode) {
-        PeriodStatusMode.Full -> Res.string.onboarding_status_title
-        PeriodStatusMode.SimpleYesNo -> Res.string.onboarding_status_simple_title
-    }
-    val subtitleRes = when (mode) {
-        PeriodStatusMode.Full -> Res.string.onboarding_status_subtitle
-        PeriodStatusMode.SimpleYesNo -> Res.string.onboarding_status_simple_subtitle
-    }
-
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            stringResource(titleRes),
+            stringResource(
+                if (isForMe) Res.string.onboarding_status_title_me
+                else Res.string.onboarding_status_title
+            ),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
@@ -145,17 +130,15 @@ internal fun PeriodStatusStep(
         )
         SmallSpacer(8)
         Text(
-            stringResource(subtitleRes),
+            stringResource(
+                if (isForMe) Res.string.onboarding_status_subtitle_me
+                else Res.string.onboarding_status_subtitle
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
-
-        if (mode == PeriodStatusMode.SimpleYesNo && importedCount > 0) {
-            SmallSpacer(12)
-            ImportedBadge(count = importedCount)
-        }
 
         SmallSpacer(24)
 
@@ -169,8 +152,14 @@ internal fun PeriodStatusStep(
             StatusCard(
                 icon = Icons.Outlined.WaterDrop,
                 accent = MaterialTheme.colorScheme.primary,
-                title = stringResource(Res.string.onboarding_status_active_title),
-                subtitle = stringResource(Res.string.onboarding_status_active_subtitle),
+                title = stringResource(
+                    if (isForMe) Res.string.onboarding_status_active_title_me
+                    else Res.string.onboarding_status_active_title
+                ),
+                subtitle = stringResource(
+                    if (isForMe) Res.string.onboarding_status_active_subtitle_me
+                    else Res.string.onboarding_status_active_subtitle
+                ),
                 selected = selected == PeriodStatusOption.Active,
                 onClick = { onSelect(PeriodStatusOption.Active) },
             ) {
@@ -182,55 +171,51 @@ internal fun PeriodStatusStep(
                 )
             }
 
-            if (mode == PeriodStatusMode.Full) {
-                StatusCard(
-                    icon = Icons.Outlined.CalendarMonth,
-                    accent = MaterialTheme.colorScheme.tertiary,
-                    title = stringResource(Res.string.onboarding_status_ended_title),
-                    subtitle = stringResource(Res.string.onboarding_status_ended_subtitle),
-                    selected = selected == PeriodStatusOption.Ended,
-                    onClick = { onSelect(PeriodStatusOption.Ended) },
-                ) {
-                    DateRow(
-                        label = stringResource(Res.string.onboarding_status_ended_start_label),
-                        value = endedStart,
-                        placeholder = stringResource(Res.string.onboarding_status_pick_start),
-                        onClick = { openPicker = PickerTarget.EndedStart },
-                    )
-                    SmallSpacer(8)
-                    DateRow(
-                        label = stringResource(Res.string.onboarding_status_ended_end_label),
-                        value = endedEnd,
-                        placeholder = stringResource(Res.string.onboarding_status_pick_end),
-                        onClick = { openPicker = PickerTarget.EndedEnd },
-                    )
-                }
+            StatusCard(
+                icon = Icons.Outlined.CalendarMonth,
+                accent = MaterialTheme.colorScheme.tertiary,
+                title = stringResource(
+                    if (isForMe) Res.string.onboarding_status_ended_title_me
+                    else Res.string.onboarding_status_ended_title
+                ),
+                subtitle = stringResource(
+                    if (isForMe) Res.string.onboarding_status_ended_subtitle_me
+                    else Res.string.onboarding_status_ended_subtitle
+                ),
+                selected = selected == PeriodStatusOption.Ended,
+                onClick = { onSelect(PeriodStatusOption.Ended) },
+            ) {
+                DateRow(
+                    label = stringResource(Res.string.onboarding_status_ended_start_label),
+                    value = endedStart,
+                    placeholder = stringResource(Res.string.onboarding_status_pick_start),
+                    onClick = { openPicker = PickerTarget.EndedStart },
+                )
+                SmallSpacer(8)
+                DateRow(
+                    label = stringResource(Res.string.onboarding_status_ended_end_label),
+                    value = endedEnd,
+                    placeholder = stringResource(Res.string.onboarding_status_pick_end),
+                    onClick = { openPicker = PickerTarget.EndedEnd },
+                )
             }
-
-            val unsureTitle = if (mode == PeriodStatusMode.Full)
-                Res.string.onboarding_status_unsure_title
-            else
-                Res.string.onboarding_status_simple_no_title
-            val unsureSubtitle = if (mode == PeriodStatusMode.Full)
-                Res.string.onboarding_status_unsure_subtitle
-            else
-                Res.string.onboarding_status_simple_no_subtitle
 
             StatusCard(
                 icon = Icons.Outlined.HelpOutline,
                 accent = MaterialTheme.colorScheme.secondary,
-                title = stringResource(unsureTitle),
-                subtitle = stringResource(unsureSubtitle),
+                title = stringResource(Res.string.onboarding_status_unsure_title),
+                subtitle = stringResource(
+                    if (isForMe) Res.string.onboarding_status_unsure_subtitle_me
+                    else Res.string.onboarding_status_unsure_subtitle
+                ),
                 selected = selected == PeriodStatusOption.Unsure,
                 onClick = { onSelect(PeriodStatusOption.Unsure) },
             ) {
-                if (mode == PeriodStatusMode.Full) {
-                    Text(
-                        stringResource(Res.string.onboarding_status_unsure_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    stringResource(Res.string.onboarding_status_unsure_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -285,30 +270,6 @@ internal fun PeriodStatusStep(
 }
 
 private enum class PickerTarget { ActiveStart, EndedStart, EndedEnd }
-
-@Composable
-private fun ImportedBadge(count: Int) {
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f))
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Outlined.CheckCircle,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(16.dp),
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            stringResource(Res.string.onboarding_status_imported_chip, count),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-    }
-}
 
 @Composable
 private fun StatusCard(

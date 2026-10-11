@@ -47,6 +47,7 @@ class HealthService(
         healthManager.requestAuthorization(readTypes, writeTypes).getOrNull() ?: false
 
     suspend fun readPeriods(
+        personId: String,
         startDate: LocalDate,
         endDate: LocalDate,
     ): List<MenstrualRecord> {
@@ -59,7 +60,7 @@ class HealthService(
         val flows = healthManager.readMenstruationFlow(startInstant, endInstant)
             .getOrNull().orEmpty()
 
-        return periods.map { period -> toMenstrualRecord(period, flows, tz) }
+        return periods.map { period -> toMenstrualRecord(personId, period, flows, tz) }
     }
 
     suspend fun writePeriods(records: List<MenstrualRecord>) {
@@ -91,6 +92,7 @@ class HealthService(
     }
 
     private fun toMenstrualRecord(
+        personId: String,
         period: MenstruationPeriodRecord,
         allFlows: List<MenstruationFlowRecord>,
         tz: TimeZone,
@@ -113,6 +115,7 @@ class HealthService(
 
         return MenstrualRecord(
             id = "health_${now}_${Random.nextInt(10000)}",
+            personId = personId,
             startDate = pStart,
             endDate = pEnd,
             endConfirmed = true,

@@ -12,11 +12,14 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.haodong.yimalaile.domain.notifications.NotificationScheduler
+import com.haodong.yimalaile.domain.notifications.PERSON_SLOTS
 import com.haodong.yimalaile.domain.notifications.ReminderKind
 import com.haodong.yimalaile.domain.notifications.ScheduledReminder
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 
 /**
  * Android scheduler backed by [AlarmManager].
@@ -48,6 +51,7 @@ class AndroidNotificationScheduler(
         // responsible for showing the system dialog — we expose a static bridge.
         if (hasPermission()) return true
         val activity = currentActivityHolder.get() ?: return false
+        pendingPermissionResult?.let { return it.await() }
         val deferred = CompletableDeferred<Boolean>()
         pendingPermissionResult = deferred
         ActivityCompat.requestPermissions(
@@ -55,7 +59,12 @@ class AndroidNotificationScheduler(
             arrayOf(Manifest.permission.POST_NOTIFICATIONS),
             PERMISSION_REQUEST_CODE,
         )
-        return deferred.await()
+        return try {
+            withTimeout(REQUEST_PERMISSION_TIMEOUT_MS) { deferred.await() }
+        } catch (_: TimeoutCancellationException) {
+            if (pendingPermissionResult === deferred) pendingPermissionResult = null
+            false
+        }
     }
 
     override fun schedule(reminder: ScheduledReminder) {
@@ -66,23 +75,22 @@ class AndroidNotificationScheduler(
             .toInstant(TimeZone.currentSystemDefault())
             .toEpochMilliseconds()
 
-        if (reminder.repeatDaily) {
-            alarmManager.setInexactRepeating(
-                AlarmManager.RTC_WAKEUP,
-                triggerMillis,
-                AlarmManager.INTERVAL_DAY,
-                pending,
-            )
-        } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerMillis, pending)
-        }
+        // Inexact allow-while-idle alarm so reminders still trigger when the
+        // device is dozing. set()/setInexactRepeating() are deferred until the
+        // device leaves idle and can sit undelivered for hours or appear to
+        // never fire. Repeating reminders are re-armed by ReminderReceiver.
+        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pending)
     }
 
-    override fun cancel(kind: ReminderKind) {
+    /** Stable request-code / notification id for a reminder [kind] at [slot]. */
+    private fun reminderId(kind: ReminderKind, slot: Int): Int =
+        kind.stableId * 1000 + slot
+
+    override fun cancel(kind: ReminderKind, slot: Int) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pending = buildPendingIntent(
             ScheduledReminder(
-                id = kind.stableId,
+                id = reminderId(kind, slot),
                 kind = kind,
                 title = "",
                 body = "",
@@ -95,7 +103,11 @@ class AndroidNotificationScheduler(
     }
 
     override fun cancelAll() {
-        ReminderKind.entries.forEach { cancel(it) }
+        ReminderKind.entries.forEach { kind ->
+            for (slot in 0 until PERSON_SLOTS) {
+                cancel(kind, slot)
+            }
+        }
     }
 
     private fun buildPendingIntent(reminder: ScheduledReminder, create: Boolean): PendingIntent? {
@@ -105,6 +117,9 @@ class AndroidNotificationScheduler(
             putExtra(EXTRA_KIND, reminder.kind.name)
             putExtra(EXTRA_TITLE, reminder.title)
             putExtra(EXTRA_BODY, reminder.body)
+            putExtra(EXTRA_REPEAT_DAILY, reminder.repeatDaily)
+            putExtra(EXTRA_HOUR, reminder.fireAt.hour)
+            putExtra(EXTRA_MINUTE, reminder.fireAt.minute)
         }
         val flags = if (create) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -139,7 +154,11 @@ class AndroidNotificationScheduler(
         const val EXTRA_KIND = "extra_kind"
         const val EXTRA_TITLE = "extra_title"
         const val EXTRA_BODY = "extra_body"
+        const val EXTRA_REPEAT_DAILY = "extra_repeat_daily"
+        const val EXTRA_HOUR = "extra_hour"
+        const val EXTRA_MINUTE = "extra_minute"
         const val PERMISSION_REQUEST_CODE = 9901
+        const val REQUEST_PERMISSION_TIMEOUT_MS = 60_000L
 
         internal val currentActivityHolder = java.util.concurrent.atomic.AtomicReference<android.app.Activity?>()
         internal var pendingPermissionResult: CompletableDeferred<Boolean>? = null

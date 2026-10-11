@@ -25,13 +25,13 @@ import com.haodong.yimalaile.ui.components.SmallSpacer
 import org.jetbrains.compose.resources.stringResource
 import yimalaile.composeapp.generated.resources.Res
 import yimalaile.composeapp.generated.resources.onboarding_all_set
-import yimalaile.composeapp.generated.resources.onboarding_all_set_hint_imported
 import yimalaile.composeapp.generated.resources.onboarding_all_set_hint_simple
+import yimalaile.composeapp.generated.resources.onboarding_all_set_hint_someone
 import yimalaile.composeapp.generated.resources.onboarding_get_started
 
 @Composable
 internal fun AllSetStep(
-    importedCount: Int,
+    isForMe: Boolean,
     onComplete: () -> Unit,
 ) {
     Column(
@@ -65,10 +65,10 @@ internal fun AllSetStep(
         )
         SmallSpacer(12)
         Text(
-            if (importedCount > 0)
-                stringResource(Res.string.onboarding_all_set_hint_imported, importedCount)
-            else
-                stringResource(Res.string.onboarding_all_set_hint_simple),
+            stringResource(
+                if (isForMe) Res.string.onboarding_all_set_hint_simple
+                else Res.string.onboarding_all_set_hint_someone
+            ),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

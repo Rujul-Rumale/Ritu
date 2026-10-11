@@ -64,7 +64,7 @@ class IosReportExportService : ReportExportService {
             val pngData = UIImagePNGRepresentation(image)
                 ?: return ExportResult.Failure("Failed to encode PNG")
 
-            val fileName = ReportContent.buildFileName(language)
+            val fileName = ReportContent.buildFileName()
             val fileUrl = writeToCaches(pngData, fileName)
                 ?: return ExportResult.Failure("Failed to write temp file")
 

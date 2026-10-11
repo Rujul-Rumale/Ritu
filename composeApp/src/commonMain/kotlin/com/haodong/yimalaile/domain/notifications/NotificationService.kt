@@ -2,6 +2,8 @@ package com.haodong.yimalaile.domain.notifications
 
 import com.haodong.yimalaile.domain.menstrual.MenstrualService
 import com.haodong.yimalaile.domain.menstrual.PredictedCycle
+import com.haodong.yimalaile.domain.person.Person
+import com.haodong.yimalaile.domain.person.PersonRepository
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -19,70 +21,79 @@ import kotlin.time.Clock
  *   - the app starts
  *   - notification preferences change
  *   - menstrual records or predictions change
+ *
+ * Every reminder — including the daily report — is scheduled per person, so
+ * each person gets their own stable alarm slot and person-named copy. The
+ * daily report is only scheduled for the people still being tracked, so a
+ * phone tracking several people gets a per-person daily nudge instead of one
+ * global, meaningless report.
  */
 class NotificationService(
     private val menstrualService: MenstrualService,
+    private val personRepository: PersonRepository,
     private val scheduler: NotificationScheduler,
 ) {
 
     /**
-     * Pre-resolved localized copy for every reminder. The caller (AppViewModel)
-     * knows the `days before` values at the moment it schedules, so it can
-     * format the strings and pass them here — this keeps the domain layer
-     * free of Compose Resources.
+     * Pre-resolved localized copy for every reminder. Body copy is a function
+     * of the person's name — callers (AppViewModel) own the resources, and
+     * [singlePerson] lets them fall back to a gender-neutral "Your" phrasing
+     * when only one person is tracked.
      */
     data class Copy(
         val periodTitle: String,
-        val periodBody: String,
+        val periodBody: suspend (name: String, singlePerson: Boolean) -> String,
         val ovulationTitle: String,
-        val ovulationBody: String,
+        val ovulationBody: suspend (name: String, singlePerson: Boolean) -> String,
         val dailyTitle: String,
-        val dailyBody: String,
+        val dailyBody: suspend (name: String, singlePerson: Boolean) -> String,
     )
 
     /** Recompute and apply the schedule for all enabled reminders. */
     suspend fun reschedule(
         prefs: NotificationPrefs,
-        cycleLength: Int,
         copy: Copy,
     ) {
-        // If the whole feature is off, clear and bail.
+        val people = personRepository.getPeople()
+        val singlePerson = people.size == 1
+
+        // If the whole feature is off, clear every slot and bail.
         if (!prefs.periodReminderEnabled &&
             !prefs.ovulationReminderEnabled &&
             !prefs.dailyReportEnabled
         ) {
-            scheduler.cancel(ReminderKind.PERIOD)
-            scheduler.cancel(ReminderKind.OVULATION)
-            scheduler.cancel(ReminderKind.DAILY_REPORT)
+            cancelPerPersonSlots()
             return
         }
 
         val tz = TimeZone.currentSystemDefault()
         val today = Clock.System.todayIn(tz)
 
-        // ---------- Daily report (cycle-independent) ----------
-        if (prefs.dailyReportEnabled) {
-            val fireAt = nextDailyFireAt(today, prefs.dailyReportHour, prefs.dailyReportMinute)
-            scheduler.schedule(
-                ScheduledReminder(
-                    id = ReminderKind.DAILY_REPORT.stableId,
-                    kind = ReminderKind.DAILY_REPORT,
-                    title = copy.dailyTitle,
-                    body = copy.dailyBody,
-                    fireAt = fireAt,
-                    repeatDaily = true,
-                )
-            )
-        } else {
-            scheduler.cancel(ReminderKind.DAILY_REPORT)
-        }
-
-        // ---------- Cycle-dependent reminders ----------
-        if (prefs.periodReminderEnabled || prefs.ovulationReminderEnabled) {
+        // ---------- Per-person reminders (cycle-dependent + daily report) ----------
+        cancelPerPersonSlots()
+        for (person in people) {
+            val slot = slotFor(person)
             val predictions = menstrualService.predictNextCycles(
+                personId = person.id,
                 count = 6,
-                cycleLength = cycleLength,
+                cycleLength = person.cycleLength,
             )
+
+            if (prefs.dailyReportEnabled) {
+                val fireAt = nextDailyFireAt(today, prefs.dailyReportHour, prefs.dailyReportMinute)
+                scheduler.schedule(
+                    ScheduledReminder(
+                        id = reminderId(ReminderKind.DAILY_REPORT, slot),
+                        kind = ReminderKind.DAILY_REPORT,
+                        title = copy.dailyTitle,
+                        body = copy.dailyBody(person.name, singlePerson),
+                        fireAt = fireAt,
+                        repeatDaily = true,
+                    )
+                )
+            } else {
+                scheduler.cancel(ReminderKind.DAILY_REPORT, slot)
+            }
 
             if (prefs.periodReminderEnabled) {
                 val fire = nextReminderDate(
@@ -94,18 +105,16 @@ class NotificationService(
                 if (fire != null) {
                     scheduler.schedule(
                         ScheduledReminder(
-                            id = ReminderKind.PERIOD.stableId,
+                            id = reminderId(ReminderKind.PERIOD, slot),
                             kind = ReminderKind.PERIOD,
                             title = copy.periodTitle,
-                            body = copy.periodBody,
+                            body = copy.periodBody(person.name, singlePerson),
                             fireAt = fire.atTime(LocalTime(9, 0)),
                         )
                     )
                 } else {
-                    scheduler.cancel(ReminderKind.PERIOD)
+                    scheduler.cancel(ReminderKind.PERIOD, slot)
                 }
-            } else {
-                scheduler.cancel(ReminderKind.PERIOD)
             }
 
             if (prefs.ovulationReminderEnabled) {
@@ -118,23 +127,19 @@ class NotificationService(
                 if (fire != null) {
                     scheduler.schedule(
                         ScheduledReminder(
-                            id = ReminderKind.OVULATION.stableId,
+                            id = reminderId(ReminderKind.OVULATION, slot),
                             kind = ReminderKind.OVULATION,
                             title = copy.ovulationTitle,
-                            body = copy.ovulationBody,
+                            body = copy.ovulationBody(person.name, singlePerson),
                             fireAt = fire.atTime(LocalTime(9, 0)),
                         )
                     )
                 } else {
-                    scheduler.cancel(ReminderKind.OVULATION)
+                    scheduler.cancel(ReminderKind.OVULATION, slot)
                 }
-            } else {
-                scheduler.cancel(ReminderKind.OVULATION)
             }
-        } else {
-            scheduler.cancel(ReminderKind.PERIOD)
-            scheduler.cancel(ReminderKind.OVULATION)
         }
+
     }
 
     suspend fun hasPermission(): Boolean = scheduler.hasPermission()
@@ -148,6 +153,18 @@ class NotificationService(
     // ---------- helpers ----------
 
     private enum class ReminderAnchor { PERIOD_START, OVULATION }
+
+    private fun slotFor(person: Person): Int =
+        (person.id.hashCode() and 0x7fffffff) % PERSON_SLOTS
+
+    private fun reminderId(kind: ReminderKind, slot: Int): Int =
+        kind.stableId * 1000 + slot
+
+    private fun cancelPerPersonSlots() {
+        for (slot in 0 until PERSON_SLOTS) {
+            ReminderKind.entries.forEach { kind -> scheduler.cancel(kind, slot) }
+        }
+    }
 
     private fun nextDailyFireAt(today: LocalDate, hour: Int, minute: Int): LocalDateTime {
         val tz = TimeZone.currentSystemDefault()

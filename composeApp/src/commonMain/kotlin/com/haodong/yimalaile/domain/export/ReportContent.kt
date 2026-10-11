@@ -124,14 +124,14 @@ internal object ReportContent {
         add(ReportLine.Text(strings.disclaimer, ReportTextStyle.SmallMuted))
     }
 
-    fun buildFileName(language: String): String {
+    fun buildFileName(): String {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         val y = now.year
         val m = now.date.month.number.toString().padStart(2, '0')
         val d = now.date.day.toString().padStart(2, '0')
         val hh = now.hour.toString().padStart(2, '0')
         val mm = now.minute.toString().padStart(2, '0')
-        val prefix = if (language == "zh") "月经周期报告" else "CycleReport"
+        val prefix = "CycleReport"
         return "${prefix}_${y}${m}${d}_${hh}${mm}.png"
     }
 

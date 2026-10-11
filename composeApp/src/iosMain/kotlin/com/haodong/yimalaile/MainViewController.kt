@@ -16,11 +16,12 @@ import com.haodong.yimalaile.di.create
 import com.haodong.yimalaile.domain.export.IosReportExportService
 import com.haodong.yimalaile.domain.menstrual.MenstrualService
 import com.haodong.yimalaile.domain.notifications.NotificationPrefs
+import com.haodong.yimalaile.domain.person.Person
 import com.haodong.yimalaile.domain.settings.SettingsRepository
-import com.haodong.yimalaile.domain.health.HealthAuthStatus
 import com.haodong.yimalaile.notifications.IosNotificationScheduler
 import com.viktormykhailiv.kmp.health.HealthManagerFactory
 import com.viktormykhailiv.kmp.health.HealthManagerFactoryOptions
+import com.haodong.yimalaile.fakes.FakePersonRepository
 import com.haodong.yimalaile.fakes.FakeRecordsRepository
 import com.haodong.yimalaile.fakes.createScreenshotTestData
 import com.haodong.yimalaile.ui.locale.LocalAppLocale
@@ -41,6 +42,16 @@ import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 
 private const val DATA_STORE_FILE_NAME = "yimalaile.preferences_pb"
+
+private val screenshotPerson = Person(
+    id = "screenshot",
+    name = "Screenshot",
+    cycleLength = 28,
+    periodLength = 5,
+    createdAtEpochMillis = 1L,
+    updatedAtEpochMillis = 1L,
+    colorIndex = 1,
+)
 
 // DataStore must be a process-wide singleton — opening two instances against the
 // same file throws IllegalStateException. Lazy single-init survives any
@@ -73,18 +84,21 @@ fun ScreenshotMainViewController() = ComposeUIViewController {
         produceFile = { dataStorePath("screenshot_test.preferences_pb").toPath() }
     )
     val settings = SettingsRepository(dataStore)
-    val fakeRepo = FakeRecordsRepository(createScreenshotTestData().toMutableList())
+    val fakeRepo = FakeRecordsRepository(
+        createScreenshotTestData().toMutableList()
+    )
+    val personRepository = FakePersonRepository(mutableListOf(screenshotPerson))
     val service = MenstrualService(fakeRepo)
 
     val scope = rememberCoroutineScope()
     val viewModel = remember {
-        AppViewModel(service, settings).also {
+        AppViewModel(service, personRepository, settings).also {
             scope.launch {
                 settings.setDisclaimerAccepted(true)
             }
         }
     }
-    val sheetViewModel = remember { SheetViewModel(service) }
+    val sheetViewModel = remember { SheetViewModel(service, screenshotPerson.id) }
 
     val darkMode = viewModel.darkMode
     val language = viewModel.language
@@ -101,25 +115,18 @@ fun ScreenshotMainViewController() = ComposeUIViewController {
                         HomeScreen(
                             service = service,
                             sheetViewModel = sheetViewModel,
+                            person = screenshotPerson,
                             settings = settings,
                             onNavigateSettings = { navController.navigate(SettingsRoute) },
+                            onNavigatePeople = { navController.popBackStack() },
                         )
                     }
                     composable<SettingsRoute> {
                         SettingsScreen(
                             currentDarkMode = darkMode,
-                            currentLanguage = language,
-                            currentCycleLength = viewModel.cycleLength,
-                            currentPeriodDuration = viewModel.periodDuration,
                             onDarkModeChange = { viewModel.updateDarkMode(it) },
-                            onLanguageChange = { viewModel.updateLanguage(it) },
-                            onCycleLengthChange = { viewModel.updateCycleLength(it) },
-                            onPeriodDurationChange = { viewModel.updatePeriodDuration(it) },
                             onBack = { navController.popBackStack() },
                             onClearData = {},
-                            healthSyncEnabled = true,
-                            healthAuthStatus = HealthAuthStatus.AUTHORIZED,
-                            healthLastSync = 1_712_400_000_000L,
                         )
                     }
                     composable<DisclaimerRoute> {
@@ -140,10 +147,10 @@ fun ScreenshotDisclaimerViewController() = ComposeUIViewController {
         produceFile = { dataStorePath("screenshot_disclaimer.preferences_pb").toPath() }
     )
     val settings = SettingsRepository(dataStore)
-    val fakeRepo = FakeRecordsRepository()
-    val service = MenstrualService(fakeRepo)
+    val service = MenstrualService(FakeRecordsRepository())
+    val personRepository = FakePersonRepository()
 
-    val viewModel = remember { AppViewModel(service, settings) }
+    val viewModel = remember { AppViewModel(service, personRepository, settings) }
     val darkMode = viewModel.darkMode
     val language = viewModel.language
 
@@ -165,10 +172,10 @@ fun ScreenshotNotificationsViewController() = ComposeUIViewController {
         produceFile = { dataStorePath("screenshot_notifications.preferences_pb").toPath() }
     )
     val settings = SettingsRepository(dataStore)
-    val fakeRepo = FakeRecordsRepository()
-    val service = MenstrualService(fakeRepo)
+    val service = MenstrualService(FakeRecordsRepository())
+    val personRepository = FakePersonRepository()
 
-    val viewModel = remember { AppViewModel(service, settings) }
+    val viewModel = remember { AppViewModel(service, personRepository, settings) }
     val darkMode = viewModel.darkMode
     val language = viewModel.language
 
@@ -205,10 +212,10 @@ fun ScreenshotOnboardingViewController() = ComposeUIViewController {
         produceFile = { dataStorePath("screenshot_onboarding.preferences_pb").toPath() }
     )
     val settings = SettingsRepository(dataStore)
-    val fakeRepo = FakeRecordsRepository()
-    val service = MenstrualService(fakeRepo)
+    val service = MenstrualService(FakeRecordsRepository())
+    val personRepository = FakePersonRepository()
 
-    val viewModel = remember { AppViewModel(service, settings) }
+    val viewModel = remember { AppViewModel(service, personRepository, settings) }
     val darkMode = viewModel.darkMode
     val language = viewModel.language
 
@@ -217,8 +224,8 @@ fun ScreenshotOnboardingViewController() = ComposeUIViewController {
             AppTheme(darkMode = darkMode) {
                 OnboardingScreen(
                     service = service,
+                    personRepository = personRepository,
                     settings = settings,
-                    healthSyncManager = null,
                     notificationPrefs = NotificationPrefs(),
                     notificationPermissionGranted = false,
                     onUpdateNotificationPrefs = {},

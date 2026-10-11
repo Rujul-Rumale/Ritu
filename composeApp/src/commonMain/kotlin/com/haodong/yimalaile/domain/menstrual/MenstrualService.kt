@@ -4,6 +4,9 @@ import kotlinx.datetime.*
 import me.tatarka.inject.annotations.Inject
 import kotlin.time.Clock
 
+/** A meaningful threshold for "we have enough cycles to predict without padding". */
+const val ENOUGH_RECORDS_FOR_PREDICTION = 3
+
 data class MenstrualCycle(
     val record: MenstrualRecord,
     val cycleLength: Int?,
@@ -13,6 +16,20 @@ data class MenstrualCycle(
     val isAnomaly: Boolean = false // 是否为异常短周期（< 14天）
 )
 
+/**
+ * Person-scoped menstrual cycle service.
+ *
+ * Every operation is scoped to a [personId]; records from other people are
+ * never loaded, so predictions, statistics and auto-confirmation are fully
+ * isolated per person.
+ *
+ * Authority hierarchy for a "hot" date range:
+ *   manual / health-import  >  auto-confirmed  >  prediction
+ *
+ * When a manual record is entered near an assumed (AUTO_CONFIRMED) period,
+ * the assumption is reconciled away so the calendar never shows two competing
+ * periods and future predictions re-anchor to the real observation.
+ */
 @Inject
 class MenstrualService(private val repository: RecordsRepository) {
 
@@ -23,36 +40,45 @@ class MenstrualService(private val repository: RecordsRepository) {
      * If [endDate] is provided (user selected it), use it directly.
      * Otherwise, creates a record with an estimated end date based on average period length.
      */
-    suspend fun recordPeriodStart(startDate: LocalDate, endDate: LocalDate? = null): AddRecordResult {
-        val all = repository.getAllRecords()
+    suspend fun recordPeriodStart(
+        personId: String,
+        startDate: LocalDate,
+        endDate: LocalDate? = null,
+    ): AddRecordResult {
+        val all = repository.getAllRecords(personId)
 
         val avgPeriod = averagePeriodLength(all) ?: 5
         val estimatedEnd = endDate ?: startDate.plus(avgPeriod - 1, DateTimeUnit.DAY)
 
-        val overlaps = all.any { record ->
+        // A real observation invalidates any assumed period in this range.
+        reconcileAutoConfirmed(personId)
+
+        val remaining = repository.getAllRecords(personId)
+        val overlaps = remaining.any { record ->
             val rEnd = record.endDate ?: startDate // treat legacy null-endDate as today
             record.startDate <= estimatedEnd && startDate <= rEnd
         }
         if (overlaps) return AddRecordResult.OverlappingPeriod
 
         val now = Clock.System.now().toEpochMilliseconds()
-        return repository.insertRecord(
+        val result = repository.insertRecord(
             MenstrualRecord(
-                id = newId(), startDate = startDate, endDate = estimatedEnd,
+                id = newId(), personId = personId, startDate = startDate, endDate = estimatedEnd,
                 endConfirmed = endDate != null,
                 createdAtEpochMillis = now, updatedAtEpochMillis = now,
                 source = RecordSource.MANUAL,
             )
         )
+        return result
     }
 
     /**
      * User confirms "姨妈走了" — period ended on [endDate].
      * Finds the most recent record covering today (or the latest record) and sets its endDate.
      */
-    suspend fun recordPeriodEnd(endDate: LocalDate): Boolean {
+    suspend fun recordPeriodEnd(personId: String, endDate: LocalDate): Boolean {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val all = repository.getAllRecords()
+        val all = repository.getAllRecords(personId)
 
         // Find the record that covers today, or the most recent record
         val record = all.find { r ->
@@ -74,8 +100,8 @@ class MenstrualService(private val repository: RecordsRepository) {
 
     // ---------- Daily logging ----------
 
-    suspend fun logDay(recordId: String, day: DailyRecord): Boolean {
-        val record = repository.getAllRecords().find { it.id == recordId } ?: return false
+    suspend fun logDay(personId: String, recordId: String, day: DailyRecord): Boolean {
+        val record = repository.getAllRecords(personId).find { it.id == recordId } ?: return false
         val updatedDaily = record.dailyRecords.filter { it.date != day.date } + day
         return repository.updateRecord(
             record.copy(dailyRecords = updatedDaily,
@@ -85,11 +111,14 @@ class MenstrualService(private val repository: RecordsRepository) {
 
     // ---------- Backfill ----------
 
-    suspend fun backfillPeriod(startDate: LocalDate, endDate: LocalDate): AddRecordResult {
+    suspend fun backfillPeriod(personId: String, startDate: LocalDate, endDate: LocalDate): AddRecordResult {
         if (endDate < startDate) return AddRecordResult.InvalidDateRange
 
-        val all = repository.getAllRecords()
-        val overlaps = all.any { record ->
+        // A real observation invalidates any assumed period in this range.
+        reconcileAutoConfirmed(personId)
+
+        val remaining = repository.getAllRecords(personId)
+        val overlaps = remaining.any { record ->
             val rEnd = record.endDate ?: endDate
             record.startDate <= endDate && startDate <= rEnd
         }
@@ -97,7 +126,7 @@ class MenstrualService(private val repository: RecordsRepository) {
 
         val now = Clock.System.now().toEpochMilliseconds()
         return repository.insertRecord(
-            MenstrualRecord(id = newId(), startDate = startDate, endDate = endDate,
+            MenstrualRecord(id = newId(), personId = personId, startDate = startDate, endDate = endDate,
                 endConfirmed = true, createdAtEpochMillis = now, updatedAtEpochMillis = now)
         )
     }
@@ -105,23 +134,23 @@ class MenstrualService(private val repository: RecordsRepository) {
     // ---------- State ----------
 
     /**
-     * Get the current cycle state.
-     * [cycleLength] is the user-configured cycle length from settings (default 28).
+     * Get the current cycle state for one person.
+     * [cycleLength] is the person's configured cycle length (default 28).
      */
-    suspend fun getCycleState(cycleLength: Int = 28): CycleState {
+    suspend fun getCycleState(personId: String, cycleLength: Int = 28): CycleState {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val all = repository.getAllRecords()
+        val all = repository.getAllRecords(personId)
         val predictions = predictNextCycles(all, cycleLength = cycleLength)
 
         // Auto-confirm predictions that are 3+ days past their end
-        autoConfirmPastPredictions(all, predictions, today)
+        autoConfirmPastPredictions(personId, all, predictions, today)
 
         // Re-read after potential auto-confirmation inserts
-        val records = repository.getAllRecords()
+        val records = repository.getAllRecords(personId)
             .sortedByDescending { it.startDate }
             .take(10)
 
-        val updatedPredictions = predictNextCycles(repository.getAllRecords(), cycleLength = cycleLength)
+        val updatedPredictions = predictNextCycles(repository.getAllRecords(personId), cycleLength = cycleLength)
 
         // Current period: a record covering today whose end hasn't been confirmed yet
         val currentPeriod = records.find { r ->
@@ -145,6 +174,7 @@ class MenstrualService(private val repository: RecordsRepository) {
     }
 
     private suspend fun autoConfirmPastPredictions(
+        personId: String,
         existingRecords: List<MenstrualRecord>,
         predictions: List<PredictedCycle>,
         today: LocalDate,
@@ -168,6 +198,7 @@ class MenstrualService(private val repository: RecordsRepository) {
             repository.insertRecord(
                 MenstrualRecord(
                     id = newId(),
+                    personId = personId,
                     startDate = pred.predictedStart,
                     endDate = pEnd,
                     endConfirmed = true,
@@ -179,13 +210,38 @@ class MenstrualService(private val repository: RecordsRepository) {
         }
     }
 
+    /**
+     * New real data overrides any and all auto-confirmed assumptions for the
+     * person. An auto-confirmed record is derived state (a guess inferred from
+     * older real observations); the moment a fresh real period, edit or backfill
+     * lands, every guess is dropped and getCycleState() reconstitutes the chain
+     * anchored on the real records. This keeps the assumption chain from ever
+     * masquerading as observed history.
+     */
+    private suspend fun reconcileAutoConfirmed(personId: String) {
+        val toRemove = repository.getAllRecords(personId)
+            .filter { it.source == RecordSource.AUTO_CONFIRMED }
+        toRemove.forEach { repository.deleteRecord(it.id, personId) }
+    }
+
     // ---------- Edit / Delete ----------
 
-    suspend fun editRecordDates(recordId: String, newStart: LocalDate?, newEnd: LocalDate?): Boolean {
-        val record = repository.getAllRecords().find { it.id == recordId } ?: return false
+    suspend fun editRecordDates(
+        personId: String,
+        recordId: String,
+        newStart: LocalDate?,
+        newEnd: LocalDate?,
+    ): Boolean {
+        val record = repository.getAllRecords(personId).find { it.id == recordId } ?: return false
         val start = newStart ?: record.startDate
         val end = newEnd ?: record.endDate
         if (end != null && end < start) return false
+
+        // Editing a real record to overlap an assumption resolves the assumption.
+        if (record.source == RecordSource.MANUAL || record.source == RecordSource.HEALTH_IMPORT) {
+            reconcileAutoConfirmed(personId)
+        }
+
         val trimmedDaily = if (end != null) record.dailyRecords.filter { it.date in start..end } else record.dailyRecords
         return repository.updateRecord(
             record.copy(
@@ -197,8 +253,8 @@ class MenstrualService(private val repository: RecordsRepository) {
         )
     }
 
-    suspend fun deleteRecord(recordId: String): Boolean =
-        repository.deleteRecord(recordId)
+    suspend fun deleteRecord(personId: String, recordId: String): Boolean =
+        repository.deleteRecord(recordId, personId)
 
     // ---------- Data management ----------
 
@@ -207,18 +263,52 @@ class MenstrualService(private val repository: RecordsRepository) {
     }
 
     /**
-     * Return every non-deleted record, sorted by start date ascending.
+     * Seed a synthetic past history so predictions work immediately, using the
+     * same rules as first-run onboarding:
+     *  - if the person has no records at all, anchor the series one cycle ago,
+     *  - then pad further into the past until we reach [ENOUGH_RECORDS_FOR_PREDICTION].
+     *
+     * Returns the total record count after seeding. Idempotent: when the person
+     * already has enough records, this does nothing.
+     */
+    suspend fun seedInitialHistory(personId: String, cycleLength: Int, periodDuration: Int): Int {
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        if (repository.getAllRecords(personId).isEmpty()) {
+            val anchorStart = today.minus(cycleLength, DateTimeUnit.DAY)
+            val anchorEnd = anchorStart.plus(periodDuration - 1, DateTimeUnit.DAY)
+            backfillPeriod(personId, anchorStart, anchorEnd)
+        }
+
+        var state = getCycleState(personId, cycleLength)
+        var recordsCount = state.records.size
+        if (recordsCount >= ENOUGH_RECORDS_FOR_PREDICTION) return recordsCount
+
+        val anchor = state.records.minByOrNull { it.startDate }?.startDate ?: return recordsCount
+        val needed = ENOUGH_RECORDS_FOR_PREDICTION + 2 - recordsCount
+        for (i in 1..needed) {
+            val pastStart = anchor.minus(cycleLength * i, DateTimeUnit.DAY)
+            val pastEnd = pastStart.plus(periodDuration - 1, DateTimeUnit.DAY)
+            backfillPeriod(personId, pastStart, pastEnd)
+        }
+
+        state = getCycleState(personId, cycleLength)
+        val finalCount = state.records.size
+        return finalCount
+    }
+
+    /**
+     * Every non-deleted record for one person, sorted by start date ascending.
      * Used by the PDF export flow.
      */
-    suspend fun getAllRecords(): List<MenstrualRecord> =
-        repository.getAllRecords()
+    suspend fun getAllRecords(personId: String): List<MenstrualRecord> =
+        repository.getAllRecords(personId)
             .filter { !it.isDeleted }
             .sortedBy { it.startDate }
 
     // ---------- Prediction ----------
 
-    suspend fun predictNextCycles(count: Int = 3, cycleLength: Int = 28): List<PredictedCycle> =
-        predictNextCycles(repository.getAllRecords(), count, cycleLength)
+    suspend fun predictNextCycles(personId: String, count: Int = 3, cycleLength: Int = 28): List<PredictedCycle> =
+        predictNextCycles(repository.getAllRecords(personId), count, cycleLength)
 
     // ---------- Cycle Analysis ----------
 
@@ -240,11 +330,11 @@ class MenstrualService(private val repository: RecordsRepository) {
     ): MenstrualCycle {
         val sorted = allRecords.filter { !it.isDeleted }.sortedBy { it.startDate }
         val index = sorted.indexOfFirst { it.id == record.id }
-        
+
         val cycleLength = if (index != -1 && index < sorted.size - 1) {
             sorted[index].startDate.until(sorted[index + 1].startDate, DateTimeUnit.DAY).toInt()
         } else null
-        
+
         // 标记是否为异常短周期
         val isAnomaly = cycleLength != null && cycleLength < 14
 
@@ -252,17 +342,18 @@ class MenstrualService(private val repository: RecordsRepository) {
         val cycleEndDate = if (index != -1 && index < sorted.size - 1) {
             sorted[index + 1].startDate.plus(-1, DateTimeUnit.DAY)
         } else {
-            val nextStart = predictions.firstOrNull()?.predictedStart 
+            val nextStart = predictions.firstOrNull()?.predictedStart
                 ?: record.startDate.plus(effectiveLength, DateTimeUnit.DAY)
             nextStart.plus(-1, DateTimeUnit.DAY)
         }
 
-        // 医学标准计算法：排卵日通常在下次月经开始前的第14天左右。
-        // 黄体期（排卵到下次月经）相对固定，约为14天。
-        // 而卵泡期（月经开始到排卵）变动较大，周期的长短主要取决于卵泡期。
+        // Standard medical calculation: ovulation usually occurs ~14 days
+        // before the start of the next period. The luteal phase (ovulation to
+        // next period) is fairly fixed at ~14 days, while the follicular phase
+        // (period to ovulation) varies more; cycle length depends mainly on it.
         val peakDayOffset = (effectiveLength - 14).coerceAtLeast(0)
         val peakDate = record.startDate.plus(peakDayOffset, DateTimeUnit.DAY)
-        
+
         val ovulationDates = buildSet {
             // 如果是异常短周期，排卵计算可能不适用，但这里仍按公式给出一个参考，UI层会提示异常
             // 排卵期窗口通常为6天（高峰日前4天到后1天）
@@ -285,7 +376,8 @@ class MenstrualService(private val repository: RecordsRepository) {
     // ---------- Private ----------
 
     /**
-     * Predict next cycles using the user-configured [cycleLength].
+     * Predict next cycles using the configured [cycleLength] as fallback.
+     * Anomalously short cycles (< 14 days) are excluded from the average.
      */
     private fun predictNextCycles(records: List<MenstrualRecord>, count: Int = 3, cycleLength: Int = 28): List<PredictedCycle> {
         // 计算历史平均周期长度，排除掉周期小于 14 天的记录
@@ -297,7 +389,7 @@ class MenstrualService(private val repository: RecordsRepository) {
                 cycleLengths.add(length)
             }
         }
-        
+
         val effectiveCycleLength = if (cycleLengths.isNotEmpty()) {
             cycleLengths.sum() / cycleLengths.size
         } else {

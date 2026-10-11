@@ -16,43 +16,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.haodong.yimalaile.BuildKonfig
-import com.haodong.yimalaile.ExportStatus
-import com.haodong.yimalaile.domain.health.HealthAuthStatus
 import com.haodong.yimalaile.domain.settings.AppDarkMode
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Instant
 import org.jetbrains.compose.resources.stringResource
 import yimalaile.composeapp.generated.resources.*
 
 @Composable
 fun SettingsScreen(
     currentDarkMode: AppDarkMode,
-    currentLanguage: String?,
-    currentCycleLength: Int,
-    currentPeriodDuration: Int,
     onDarkModeChange: (AppDarkMode) -> Unit,
-    onLanguageChange: (String?) -> Unit,
-    onCycleLengthChange: (Int) -> Unit,
-    onPeriodDurationChange: (Int) -> Unit,
     onBack: () -> Unit,
     onClearData: () -> Unit,
     onNavigateNotifications: () -> Unit = {},
-    exportStatus: ExportStatus = ExportStatus.Idle,
-    onExport: (language: String) -> Unit = {},
-    onResetExportStatus: () -> Unit = {},
-    healthSyncEnabled: Boolean = false,
-    healthAuthStatus: HealthAuthStatus = HealthAuthStatus.NOT_AVAILABLE,
-    healthLastSync: Long = 0L,
-    healthSyncInProgress: Boolean = false,
-    onToggleHealthSync: (Boolean) -> Unit = {},
-    onSyncHealthNow: () -> Unit = {},
 ) {
     var showClearConfirm by remember { mutableStateOf(false) }
     var showAboutSheet by remember { mutableStateOf(false) }
-    var showPeriodDurationDialog by remember { mutableStateOf(false) }
-    var showCycleLengthDialog by remember { mutableStateOf(false) }
-    var showExportDialog by remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -90,137 +67,12 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // ── Language — text toggle ──
-        SectionLabel(stringResource(Res.string.settings_language))
-        Spacer(Modifier.height(12.dp))
-        InlineTextToggle(
-            items = listOf(
-                null to "Auto",
-                "en" to "EN",
-                "zh" to "中文",
-            ),
-            selected = currentLanguage,
-            onSelect = onLanguageChange,
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Period Duration — display only, tap to edit ──
-        SettingsItem(
-            label = stringResource(Res.string.settings_period_duration),
-            value = "${currentPeriodDuration} ${stringResource(Res.string.unit_days)}",
-            onClick = { showPeriodDurationDialog = true },
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        // ── Cycle Length — display only, tap to edit ──
-        SettingsItem(
-            label = stringResource(Res.string.settings_cycle_length),
-            value = "${currentCycleLength} ${stringResource(Res.string.unit_days)}",
-            onClick = { showCycleLengthDialog = true },
-        )
-
-        Spacer(Modifier.height(12.dp))
-
         // ── Notifications ──
         SettingsItem(
             label = stringResource(Res.string.settings_notifications),
             value = stringResource(Res.string.settings_notifications_value),
             onClick = onNavigateNotifications,
         )
-
-        Spacer(Modifier.height(12.dp))
-
-        // ── Export report ──
-        SettingsItem(
-            label = stringResource(Res.string.settings_export),
-            value = stringResource(Res.string.settings_export_value),
-            onClick = {
-                onResetExportStatus()
-                showExportDialog = true
-            },
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Health Data ──
-        SectionLabel(stringResource(Res.string.settings_health_data))
-        Spacer(Modifier.height(12.dp))
-        Surface(
-            tonalElevation = 1.dp,
-            shape = MaterialTheme.shapes.large,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(Modifier.padding(20.dp)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            stringResource(Res.string.settings_health_sync),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            stringResource(Res.string.settings_health_sync_desc),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = healthSyncEnabled,
-                        onCheckedChange = onToggleHealthSync,
-                        enabled = healthAuthStatus != HealthAuthStatus.NOT_AVAILABLE,
-                    )
-                }
-                if (healthAuthStatus == HealthAuthStatus.NOT_AVAILABLE) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        stringResource(Res.string.settings_health_not_available),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                if (healthSyncEnabled) {
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            if (healthLastSync > 0L) {
-                                stringResource(
-                                    Res.string.settings_health_last_sync,
-                                    formatSyncTime(healthLastSync),
-                                )
-                            } else {
-                                stringResource(Res.string.settings_health_never_synced)
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                        FilledTonalButton(
-                            onClick = onSyncHealthNow,
-                            enabled = !healthSyncInProgress,
-                        ) {
-                            if (healthSyncInProgress) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(Res.string.settings_health_syncing))
-                            } else {
-                                Text(stringResource(Res.string.settings_health_sync_now))
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         Spacer(Modifier.height(24.dp))
 
@@ -287,51 +139,6 @@ fun SettingsScreen(
     if (showAboutSheet) {
         AboutSheet(onDismiss = { showAboutSheet = false })
     }
-
-    if (showPeriodDurationDialog) {
-        SliderDialog(
-            title = stringResource(Res.string.settings_period_duration),
-            currentValue = currentPeriodDuration,
-            valueRange = 2f..10f,
-            steps = 7,
-            minLabel = "2",
-            maxLabel = "10",
-            onConfirm = { onPeriodDurationChange(it); showPeriodDurationDialog = false },
-            onDismiss = { showPeriodDurationDialog = false },
-        )
-    }
-
-    if (showCycleLengthDialog) {
-        SliderDialog(
-            title = stringResource(Res.string.settings_cycle_length),
-            currentValue = currentCycleLength,
-            valueRange = 20f..45f,
-            steps = 24,
-            minLabel = "20",
-            maxLabel = "45",
-            onConfirm = { onCycleLengthChange(it); showCycleLengthDialog = false },
-            onDismiss = { showCycleLengthDialog = false },
-        )
-    }
-
-    if (showExportDialog) {
-        ExportDialog(
-            status = exportStatus,
-            onExport = { language -> onExport(language) },
-            onDismiss = {
-                showExportDialog = false
-                onResetExportStatus()
-            },
-        )
-    }
-}
-
-private fun formatSyncTime(epochMillis: Long): String {
-    val tz = TimeZone.currentSystemDefault()
-    val dt = Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(tz)
-    val h = dt.hour.toString().padStart(2, '0')
-    val m = dt.minute.toString().padStart(2, '0')
-    return "${dt.date} $h:$m"
 }
 
 // ════════════════════════════════════════════════════════════════

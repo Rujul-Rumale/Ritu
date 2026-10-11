@@ -93,7 +93,7 @@ fun buildDateMap(
 
 private data class YearMonth(val year: Int, val month: Month)
 
-private val TODAY_COLOR = Color(0xFF7C4DFF) // purple
+private val TODAY_COLOR = Color(0xFF6D5AE6) // violet
 
 /**
  * Reusable cycle-aware calendar grid with simple square cells.

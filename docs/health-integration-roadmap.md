@@ -2,6 +2,12 @@
 
 YIMA integrates with platform health services (Apple HealthKit on iOS, Google Health Connect on Android) via the [HealthKMP](https://github.com/vitoksmile/HealthKMP) library.
 
+> **Ritu policy — For-Me only.** Platform health stores are single-user with no
+> per-person partition. `HealthSyncGate.isHealthSyncAllowed(person)` returns true
+> only for `Person.isForMe`. Every other person stays local-only: the sync UI in
+> `PersonEditScreen` renders disabled with the reason, and `HealthSyncManager`
+> returns `DisabledForOtherPerson` before touching the SDK.
+
 ## Phase 1: Menstrual Data Sync (Implemented)
 
 Bidirectional sync of menstrual period and flow data.

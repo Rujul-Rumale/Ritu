@@ -3,15 +3,17 @@ package com.haodong.yimalaile.ui.pages.home
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -19,6 +21,7 @@ import com.haodong.yimalaile.domain.menstrual.AddRecordResult
 import com.haodong.yimalaile.domain.menstrual.CyclePhaseInfo
 import com.haodong.yimalaile.domain.menstrual.CycleState
 import com.haodong.yimalaile.domain.menstrual.MenstrualService
+import com.haodong.yimalaile.domain.person.Person
 import com.haodong.yimalaile.ui.components.DecorShape
 import com.haodong.yimalaile.ui.components.SmallSpacer
 import com.haodong.yimalaile.ui.components.SuccessOverlay
@@ -28,17 +31,18 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import yimalaile.composeapp.generated.resources.Res
-import yimalaile.composeapp.generated.resources.app_name
 import yimalaile.composeapp.generated.resources.record_save_success
 
 @Composable
 fun HomeScreen(
     service: MenstrualService,
     sheetViewModel: SheetViewModel,
+    person: Person,
     settings: com.haodong.yimalaile.domain.settings.SettingsRepository,
     onNavigateSettings: () -> Unit,
+    onNavigatePeople: () -> Unit,
 ) {
-    val viewModel = remember { HomeViewModel(service, settings) }
+    val viewModel = remember { HomeViewModel(service, settings, person) }
     val cycleState = viewModel.cycleState
     val phaseInfo = viewModel.phaseInfo
     val isLoading = viewModel.isLoading
@@ -61,13 +65,18 @@ fun HomeScreen(
         if (!isLoading && cycleState != null) {
             Box(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {
-                    HomeAppBar(onNavigateSettings = onNavigateSettings)
+                    HomeAppBar(
+                        personName = person.name,
+                        onNavigateSettings = onNavigateSettings,
+                        onNavigatePeople = onNavigatePeople,
+                    )
 
                     HomeContent(
                         homeMode = homeMode,
                         cycleState = cycleState,
                         phaseInfo = phaseInfo,
                         service = service,
+                        personId = person.id,
                         onRefresh = { viewModel.refresh() },
                         sheetViewModel = sheetViewModel,
                         detailSelectedDate = detailSelectedDate,
@@ -116,19 +125,24 @@ fun HomeScreen(
 
 @Composable
 private fun HomeAppBar(
+    personName: String,
     onNavigateSettings: () -> Unit,
+    onNavigatePeople: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        IconButton(onClick = onNavigatePeople, modifier = Modifier.size(40.dp)) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onNavigateSettings)
-                .testTag("nav_settings")
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DecorShape(
@@ -138,9 +152,21 @@ private fun HomeAppBar(
             )
             SmallSpacer(8)
             Text(
-                stringResource(Res.string.app_name),
+                personName,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(
+            onClick = onNavigateSettings,
+            modifier = Modifier.testTag("nav_settings"),
+        ) {
+            Icon(
+                Icons.Outlined.Settings,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -152,6 +178,7 @@ private fun HomeContent(
     cycleState: CycleState,
     phaseInfo: CyclePhaseInfo?,
     service: MenstrualService,
+    personId: String,
     onRefresh: () -> Unit,
     sheetViewModel: SheetViewModel,
     detailSelectedDate: LocalDate?,
@@ -190,6 +217,7 @@ private fun HomeContent(
                     cycleState = cycleState,
                     phaseInfo = phaseInfo,
                     service = service,
+                    personId = personId,
                     onRefresh = onRefresh,
                     selectedDate = detailSelectedDate,
                     onSelectedDateChange = onDetailSelectedDateChange,

@@ -35,7 +35,7 @@ class AndroidReportExportService(private val context: Context) : ReportExportSer
 
             val plan = measure(lines)
             val bitmap = renderBitmap(plan)
-            val file = writeToCache(bitmap, ReportContent.buildFileName(language))
+            val file = writeToCache(bitmap, ReportContent.buildFileName())
             bitmap.recycle()
 
             val uri = FileProvider.getUriForFile(

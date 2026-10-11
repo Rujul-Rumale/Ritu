@@ -89,9 +89,9 @@ fun PeriodDetailCalendar(
         val startMonth = startDate.month
         val endMonth = cycleEndDate.month
         val monthLabel = if (startMonth == endMonth) {
-            "${startDate.year}年 ${startDate.month.number}月"
+            "${monthName(startDate.month)} ${startDate.year}"
         } else {
-            "${startDate.year}年 ${startDate.month.number}月 - ${cycleEndDate.year}年 ${cycleEndDate.month.number}月"
+            "${monthName(startDate.month)} ${startDate.year} - ${monthName(cycleEndDate.month)} ${cycleEndDate.year}"
         }
 
         Text(
@@ -148,7 +148,7 @@ private fun DayCell(
     val underlineH = 4.dp
     val onSurface = MaterialTheme.colorScheme.onSurface
     val periodColor = MaterialTheme.colorScheme.error
-    val ovulationColor = Color(0xFF7C4DFF)
+    val ovulationColor = Color(0xFFAD1457)
 
     Box(
         modifier = modifier.height(cellHeight),
@@ -175,7 +175,7 @@ private fun DayCell(
                     modifier = Modifier.padding(end = 4.dp)
                 ) {
                     Text(
-                        "${date.month.number}月",
+                        "${shortMonthName(date.month)}",
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                         color = onSurface,
@@ -239,5 +239,23 @@ private fun DayCell(
             )
         }
     }
+}
+
+private fun monthName(month: Month): String = when (month) {
+    Month.JANUARY -> "January"; Month.FEBRUARY -> "February"
+    Month.MARCH -> "March"; Month.APRIL -> "April"
+    Month.MAY -> "May"; Month.JUNE -> "June"
+    Month.JULY -> "July"; Month.AUGUST -> "August"
+    Month.SEPTEMBER -> "September"; Month.OCTOBER -> "October"
+    Month.NOVEMBER -> "November"; Month.DECEMBER -> "December"
+}
+
+private fun shortMonthName(month: Month): String = when (month) {
+    Month.JANUARY -> "Jan"; Month.FEBRUARY -> "Feb"
+    Month.MARCH -> "Mar"; Month.APRIL -> "Apr"
+    Month.MAY -> "May"; Month.JUNE -> "Jun"
+    Month.JULY -> "Jul"; Month.AUGUST -> "Aug"
+    Month.SEPTEMBER -> "Sep"; Month.OCTOBER -> "Oct"
+    Month.NOVEMBER -> "Nov"; Month.DECEMBER -> "Dec"
 }
 
