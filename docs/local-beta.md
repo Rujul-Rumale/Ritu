@@ -41,6 +41,5 @@ capability. The guardrails:
   `git status` first.
 - Never run `git clean` — it would delete the ignored local-only files.
 - Never push the `beta-local` branch. Ever.
-- The telemetry backup lives outside the repo at
-  `%LOCALAPPDATA%\Temp\opencode\telemetry-backup\` in case the local
-  branch is ever lost.
+- A code backup of the tester tree also lives in `Documents\Ritu-backup-*.zip`
+  in case the local branch is ever lost.
