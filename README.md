@@ -1,3 +1,5 @@
+<img src="docs/logo.png" width="128" alt="Ritu logo">
+
 # Ritu — Period Tracker
 
 > ⚠️ **Work in progress.** Ritu is under active development — expect bugs and rough edges. Known gaps right now include daily notes & mood logging, which are broken and being re-added. If you hit something, please file it under [Issues](https://github.com/Rujul-Rumale/Ritu/issues).
@@ -102,15 +104,25 @@ All three are off by default and require an explicit OS-level permission grant. 
 ### Platform & design
 - **Android** (min SDK 26) and **iOS** — shared codebase
 - **Material Design 3 Expressive** with custom Comfortaa typography
-- Full English + Simplified Chinese localization with localized month and weekday names
+- English localization with localized month and weekday names
 
 ## Screenshots
 
 | Overview | Detail calendar | Statistics | Reminders | Settings |
 |---|---|---|---|---|
-| ![Overview](docs/screenshots/android/01-overview.png) | ![Detail calendar](docs/screenshots/android/02-detail.png) | ![Statistics](docs/screenshots/android/03-statistics.png) | ![Reminders](docs/screenshots/android/04-reminder.png) | ![Settings](docs/screenshots/android/05-settings.png) |
+| ![Overview (light)](docs/screenshots/android/01-overview.png) | ![Detail calendar (light)](docs/screenshots/android/02-detail.png) | ![Statistics (light)](docs/screenshots/android/03-statistics.png) | ![Reminders (light)](docs/screenshots/android/04-reminder.png) | ![Settings (light)](docs/screenshots/android/05-settings.png) |
+| ![Overview (dark)](docs/screenshots/android/01-overview-dark.png) | ![Detail calendar (dark)](docs/screenshots/android/02-detail-dark.png) | ![Statistics (dark)](docs/screenshots/android/03-statistics-dark.png) | ![Reminders (dark)](docs/screenshots/android/04-reminder-dark.png) | ![Settings (dark)](docs/screenshots/android/05-settings-dark.png) |
 
-_Android, English locale. Some screenshots are inherited from upstream YIMA as the shared UI is still being re-captured for Ritu._
+_Android, English locale._
+
+### Multi-person tracking
+
+| People list | Person detail | Add person | Purpose |
+|---|---|---|---|
+| ![People list (light)](docs/screenshots/android/06-people.png) | ![Detail calendar (light)](docs/screenshots/android/02-detail.png) | ![Add person (light)](docs/screenshots/android/08-add-person.png) | ![Purpose (light)](docs/screenshots/android/09-purpose.png) |
+| ![People list (dark, real device)](docs/screenshots/android/06-people-dark.png) | ![Person detail (dark, real device)](docs/screenshots/android/07-person-detail-dark.png) | ![Add person (dark)](docs/screenshots/android/08-add-person-dark.png) | ![Purpose (dark)](docs/screenshots/android/09-purpose-dark.png) |
+
+_Light shots use test data. Dark People/Detail shots are from a real device with names redacted._
 
 ## Tech Stack
 
