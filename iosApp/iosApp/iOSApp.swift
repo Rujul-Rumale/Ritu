@@ -1,6 +1,5 @@
 import SwiftUI
 import UserNotifications
-import FirebaseCore
 
 @main
 struct iOSApp: App {
@@ -9,12 +8,6 @@ struct iOSApp: App {
     // scheduled from Kotlin (IosNotificationScheduler) will NOT show a
     // banner when the app is in the foreground.
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-
-    init() {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
-    }
 
     var body: some Scene {
         WindowGroup {
