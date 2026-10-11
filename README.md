@@ -1,5 +1,7 @@
 # Ritu — Period Tracker
 
+> ⚠️ **Work in progress.** Ritu is under active development — expect bugs and rough edges. Known gaps right now include daily notes & mood logging, which are broken and being re-added. If you hit something, please file it under [Issues](https://github.com/Rujul-Rumale/Ritu/issues).
+
 **Ritu is a fork of [YIMA](https://github.com/Novawerk/YIMA)** — the privacy-first, open-source period tracker by [Novawerk](https://github.com/Novawerk). YIMA tracks one person. **Ritu tracks the people you care for**: keep a private cycle history for yourself, a partner, family, and friends — all in one app, all on your device.
 
 Built with Kotlin Multiplatform and Compose Multiplatform. No account, no cloud, no network, no analytics, no ads.
