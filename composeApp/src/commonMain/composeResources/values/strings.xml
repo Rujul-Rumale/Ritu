@@ -78,7 +78,7 @@
     <string name="onboarding_confirm">Confirm</string>
     <!-- Onboarding — Purpose step -->
     <string name="onboarding_purpose_title">Who is this for?</string>
-    <string name="onboarding_purpose_hint">Choose who you\'re setting up first. You can add more people later from People.</string>
+    <string name="onboarding_purpose_hint">Choose who you're setting up first. You can add more people later from People.</string>
     <string name="onboarding_purpose_me_title">For me</string>
     <string name="onboarding_purpose_me_subtitle">Track your own cycle.</string>
     <string name="onboarding_purpose_someone_title">For someone else</string>
@@ -267,7 +267,7 @@
     <string name="person_add_end_label">Ended on</string>
     <string name="person_add_start_pick">Pick start date</string>
     <string name="person_add_end_pick">Pick end date</string>
-    <string name="person_add_unsure_hint">We\'ll start with the default settings and you can set the exact date later on the calendar.</string>
+    <string name="person_add_unsure_hint">We'll start with the default settings and you can set the exact date later on the calendar.</string>
     <!-- Platform health sync (For-Me only) -->
     <string name="health_sync_title">Health data sync</string>
     <string name="health_sync_subtitle_me">Sync your periods with Apple Health / Health Connect on this device.</string>
