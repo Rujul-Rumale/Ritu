@@ -88,20 +88,6 @@ jobs:
             --title "${{ steps.v.outputs.tag }}" \
             --generate-notes
 
-      # The release-published event triggered above does NOT fire downstream
-      # workflows because it was created with GITHUB_TOKEN. Explicitly dispatch
-      # the screenshots workflow so the release auto-refreshes screenshots.
-      # continue-on-error: dispatch can return 403 when the workflow token
-      # lacks workflow-write scope. Screenshots are nice-to-have; failing
-      # this step shouldn't block the AAB build + Play Store upload below.
-      - name: Trigger screenshots refresh
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh workflow run screenshots.yml --ref main -f include_ios=true
-          echo "Screenshots workflow dispatched on main."
-
       - name: Build signed AAB
         env:
           KEYSTORE_PATH: ${{ github.workspace }}/keystore.jks
