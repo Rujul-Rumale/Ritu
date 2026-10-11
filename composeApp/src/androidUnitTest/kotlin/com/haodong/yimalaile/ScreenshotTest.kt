@@ -27,6 +27,9 @@ import com.haodong.yimalaile.ui.locale.LocalAppLocale
 import com.haodong.yimalaile.ui.pages.disclaimer.DisclaimerScreen
 import com.haodong.yimalaile.ui.pages.home.HomeScreen
 import com.haodong.yimalaile.ui.pages.onboarding.OnboardingScreen
+import com.haodong.yimalaile.ui.pages.onboarding.PurposeStep
+import com.haodong.yimalaile.ui.pages.people.PeopleScreen
+import com.haodong.yimalaile.ui.pages.people.PersonEditScreen
 import com.haodong.yimalaile.ui.pages.settings.NotificationSettingsScreen
 import com.haodong.yimalaile.ui.pages.settings.SettingsScreen
 import com.haodong.yimalaile.ui.pages.sheet.LocalSheetViewModel
@@ -221,6 +224,46 @@ class ScreenshotTest {
 
 
     // ═══════════════════════════════════════════════════
+    // People List (multi-person dashboard)
+    // ═══════════════════════════════════════════════════
+
+    @Test
+    fun people_list_en_light() = peopleListTest("en", AppDarkMode.LIGHT)
+
+    @Test
+    fun people_list_en_dark() = peopleListTest("en", AppDarkMode.DARK)
+
+
+
+    // ═══════════════════════════════════════════════════
+    // Person Add (PersonEditScreen create mode)
+    // ═══════════════════════════════════════════════════
+
+    @Test
+    fun person_add_en_light() = personAddTest("en", AppDarkMode.LIGHT)
+
+    @Test
+    fun person_add_en_dark() = personAddTest("en", AppDarkMode.DARK)
+
+
+
+    // ═══════════════════════════════════════════════════
+    // Onboarding — Purpose Step
+    // ═══════════════════════════════════════════════════
+
+    @Test
+    fun purpose_en_light() = screenshotTest("en", AppDarkMode.LIGHT) {
+        PurposeStep(selected = null, onSelect = {}, onContinue = {}, onBack = {})
+    }
+
+    @Test
+    fun purpose_en_dark() = screenshotTest("en", AppDarkMode.DARK) {
+        PurposeStep(selected = null, onSelect = {}, onContinue = {}, onBack = {})
+    }
+
+
+
+    // ═══════════════════════════════════════════════════
     // Helpers
     // ═══════════════════════════════════════════════════
 
@@ -369,6 +412,77 @@ class ScreenshotTest {
                 onEditStart = {},
                 onEditEnd = {},
                 onDelete = {},
+            )
+        }
+    }
+
+    private fun peopleListTest(
+        locale: String,
+        darkMode: AppDarkMode,
+    ) {
+        val me = Person(
+            id = "person_me",
+            name = "Me",
+            cycleLength = 28,
+            periodLength = 5,
+            createdAtEpochMillis = 1L,
+            updatedAtEpochMillis = 1L,
+            colorIndex = 0,
+            isForMe = true,
+        )
+        val ava = Person(
+            id = "person_ava",
+            name = "Ava",
+            cycleLength = 29,
+            periodLength = 5,
+            createdAtEpochMillis = 2L,
+            updatedAtEpochMillis = 2L,
+            colorIndex = 1,
+        )
+        val mia = Person(
+            id = "person_mia",
+            name = "Mia",
+            cycleLength = 30,
+            periodLength = 6,
+            createdAtEpochMillis = 3L,
+            updatedAtEpochMillis = 3L,
+            colorIndex = 2,
+        )
+        val people = listOf(me, ava, mia)
+
+        val base = createBeautifulTestData()
+        val meRecords = base.map { it.copy(personId = me.id) }
+        val avaRecords = base.map { it.copy(id = "${it.id}_ava", personId = ava.id) }
+        val miaRecords = base.map { it.copy(id = "${it.id}_mia", personId = mia.id) }
+        val fakeRepo = FakeRecordsRepository((meRecords + avaRecords + miaRecords).toMutableList())
+        val service = MenstrualService(fakeRepo)
+
+        screenshotTest(locale, darkMode) {
+            PeopleScreen(
+                people = people,
+                service = service,
+                onPersonClick = {},
+                onAddPerson = {},
+                onSettings = {},
+            )
+        }
+    }
+
+    private fun personAddTest(
+        locale: String,
+        darkMode: AppDarkMode,
+    ) {
+        val fakeRepo = FakeRecordsRepository()
+        val service = MenstrualService(fakeRepo)
+        val personRepository = FakePersonRepository()
+
+        screenshotTest(locale, darkMode) {
+            PersonEditScreen(
+                service = service,
+                personRepository = personRepository,
+                person = null,
+                onBack = {},
+                onSaved = {},
             )
         }
     }
